@@ -1,0 +1,129 @@
+/**
+ * Vendors Table Component
+ * 
+ * This component displays vendors with their risk analytics.
+ */
+'use client';
+
+import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/lib/api-client';
+import { VendorAnalytics } from '@/types/api';
+import { formatCurrency } from '@/lib/utils';
+import { AlertCircle } from 'lucide-react';
+
+export default function VendorsTable() {
+  const { data: vendorsData, isLoading } = useQuery({
+    queryKey: ['vendors-analytics'],
+    queryFn: () => api.getVendorsAnalytics(0.0),
+  });
+
+  if (isLoading) {
+    return (
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-xl font-semibold mb-4 text-gray-900">Vendors</h2>
+        <div className="space-y-3">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="h-16 bg-gray-100 rounded animate-pulse"></div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const vendors = vendorsData?.data?.rows || [];
+
+  return (
+    <div className="bg-white rounded-lg shadow">
+      <div className="p-6 border-b border-gray-200">
+        <h2 className="text-xl font-semibold text-gray-900">Vendors</h2>
+        <p className="text-sm text-gray-500 mt-1">
+          {vendors.length} total vendors
+        </p>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead className="bg-gray-50 border-b border-gray-200">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Supplier Name
+              </th>
+              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Total Invoices
+              </th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Average Amount
+              </th>
+              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                High Risk+
+              </th>
+              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Critical Risk
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {vendors.map((vendor: VendorAnalytics, index: number) => {
+              const hasHighRisk = vendor.high_or_more > 0;
+              const hasCriticalRisk = vendor.critical > 0;
+
+              return (
+                <tr key={index} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-gray-900">
+                        {vendor.supplier || 'N/A'}
+                      </span>
+                      {hasCriticalRisk && (
+                        <AlertCircle size={16} className="text-red-500" />
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-center">
+                    <span className="text-sm text-gray-900 font-medium">
+                      {vendor.invoices}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <span className="text-sm font-semibold text-gray-900">
+                      {formatCurrency(vendor.avg_total)}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-center">
+                    {hasHighRisk ? (
+                      <span className="inline-flex items-center justify-center px-3 py-1.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-800 border border-orange-300">
+                        {vendor.high_or_more}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center justify-center px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">
+                        0
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-center">
+                    {hasCriticalRisk ? (
+                      <span className="inline-flex items-center justify-center px-3 py-1.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-300">
+                        {vendor.critical}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center justify-center px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">
+                        0
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {vendors.length === 0 && (
+        <div className="p-8 text-center text-gray-500">
+          No vendor data available
+        </div>
+      )}
+    </div>
+  );
+}
