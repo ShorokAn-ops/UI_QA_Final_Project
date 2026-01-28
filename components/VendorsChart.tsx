@@ -100,7 +100,7 @@ export default function VendorsChart() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vendor</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Invoices</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">High Risk</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Critical</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Critical Risk</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Avg Amount</th>
               </tr>
             </thead>
