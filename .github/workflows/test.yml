@@ -29,6 +29,11 @@ jobs:
 
       - name: Run lint
         run: npm run lint
+        continue-on-error: false
+
+      - name: Run tests
+        run: npm test
+        if: always()
 
       - name: Build project
         run: npm run build
@@ -36,8 +41,17 @@ jobs:
       - name: Check build artifacts
         run: |
           if [ -d ".next" ]; then
-            echo "Build successful - .next directory created"
+            echo "✅ Build successful - .next directory created"
+            ls -la .next
           else
-            echo "Build failed - .next directory not found"
+            echo "❌ Build failed - .next directory not found"
             exit 1
           fi
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: build-${{ matrix.node-version }}
+          path: .next
+          retention-days: 7
