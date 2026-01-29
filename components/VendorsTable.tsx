@@ -13,7 +13,11 @@ import { formatCurrency } from '@/lib/utils';
 import { getVendorRiskExplanation, parseReasons } from '@/lib/risk-helpers';
 import { AlertCircle, Sparkles } from 'lucide-react';
 
-export default function VendorsTable() {
+interface VendorsTableProps {
+  filterVendor?: string;
+}
+
+export default function VendorsTable({ filterVendor }: VendorsTableProps) {
   const { data: vendorsData, isLoading: vendorsLoading } = useQuery({
     queryKey: ['vendors-analytics'],
     queryFn: () => api.getVendorsAnalytics(0.0),
@@ -42,6 +46,13 @@ export default function VendorsTable() {
   const vendors = vendorsData?.data?.rows || [];
   const anomalies = anomaliesData?.data || [];
 
+  // Filter vendors based on filterVendor prop
+  const filteredVendors = filterVendor
+    ? vendors.filter((vendor: VendorAnalytics) => 
+        vendor.supplier?.toLowerCase() === filterVendor.toLowerCase()
+      )
+    : vendors;
+
   // Build a map of supplier -> hasAI
   const supplierHasAI = new Map<string, boolean>();
   anomalies.forEach((anomaly: RiskAnomaly) => {
@@ -58,7 +69,10 @@ export default function VendorsTable() {
       <div className="p-6 border-b border-gray-200">
         <h2 className="text-xl font-semibold text-gray-900">Vendors</h2>
         <p className="text-sm text-gray-500 mt-1">
-          {vendors.length} total vendors
+          {filterVendor 
+            ? `Showing ${filteredVendors.length} of ${vendors.length} vendors`
+            : `${vendors.length} total vendors`
+          }
         </p>
       </div>
 
@@ -87,7 +101,7 @@ export default function VendorsTable() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {vendors.map((vendor: VendorAnalytics, index: number) => {
+            {filteredVendors.map((vendor: VendorAnalytics, index: number) => {
               const hasHighRisk = vendor.high_or_more > 0;
               const hasCriticalRisk = vendor.critical > 0;
               const hasAI = supplierHasAI.get(vendor.supplier) || false;
@@ -165,9 +179,12 @@ export default function VendorsTable() {
         </table>
       </div>
 
-      {vendors.length === 0 && (
+      {filteredVendors.length === 0 && (
         <div className="p-8 text-center text-gray-500">
-          No vendor data available
+          {filterVendor 
+            ? `No vendors found matching "${filterVendor}"`
+            : 'No vendor data available'
+          }
         </div>
       )}
     </div>

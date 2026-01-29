@@ -8,6 +8,7 @@
  */
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api-client';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
@@ -15,10 +16,16 @@ import { RISK_CONFIG, RISK_LEVEL_ORDER } from '@/lib/risk-config';
 import { RiskLevel } from '@/types/api';
 
 export default function RiskChart() {
+  const router = useRouter();
+  
   const { data, isLoading } = useQuery({
     queryKey: ['dashboard-summary'],
     queryFn: api.getDashboardSummary,
   });
+
+  const handleRiskLevelClick = (riskLevel: RiskLevel) => {
+    router.push(`/invoices?risk_level=${riskLevel}`);
+  };
 
   if (isLoading) {
     return (
@@ -53,6 +60,12 @@ export default function RiskChart() {
         <BarChart 
           data={chartData}
           margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
+          onClick={(data) => {
+            if (data && data.activePayload && data.activePayload.length > 0) {
+              const riskLevel = data.activePayload[0].payload.risk_level as RiskLevel;
+              handleRiskLevelClick(riskLevel);
+            }
+          }}
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
           <XAxis 
@@ -76,6 +89,7 @@ export default function RiskChart() {
                     <p className="text-sm text-gray-600">
                       Invoices: <span className="font-semibold">{data.count}</span>
                     </p>
+                    <p className="text-xs text-gray-400 mt-1 italic">Click to filter</p>
                   </div>
                 );
               }
@@ -86,6 +100,7 @@ export default function RiskChart() {
             dataKey="count" 
             radius={[12, 12, 0, 0]}
             maxBarSize={80}
+            cursor="pointer"
           >
             {chartData.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={entry.color} />
@@ -107,7 +122,8 @@ export default function RiskChart() {
           return (
             <div 
               key={item.risk_level} 
-              className={`text-center p-4 rounded-lg border-2 ${bgColorClass} hover:shadow-md transition-shadow`}
+              onClick={() => handleRiskLevelClick(item.risk_level)}
+              className={`text-center p-4 rounded-lg border-2 ${bgColorClass} hover:shadow-md transition-all cursor-pointer hover:scale-105`}
             >
               <div className={`text-3xl font-extrabold ${textColorClass} mb-1`}>
                 {item.count}

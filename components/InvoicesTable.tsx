@@ -9,16 +9,20 @@
  */
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api-client';
-import { Invoice, RiskAnomaly, NormalizedReason, AiMeta } from '@/types/api';
+import { Invoice, RiskAnomaly, NormalizedReason, AiMeta, RiskLevel } from '@/types/api';
 import { formatCurrency, formatDate, formatPercentage } from '@/lib/utils';
 import { getRiskConfig } from '@/lib/risk-config';
 import { parseReasons, formatAiMetaTooltip } from '@/lib/risk-helpers';
 import { ChevronDown, ChevronRight, AlertCircle, Sparkles, Info } from 'lucide-react';
 
-export default function InvoicesTable() {
+interface InvoicesTableProps {
+  filterRiskLevel?: RiskLevel | null;
+}
+
+export default function InvoicesTable({ filterRiskLevel }: InvoicesTableProps) {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [reasonsModal, setReasonsModal] = useState<{
     invoiceId: string;
@@ -37,6 +41,29 @@ export default function InvoicesTable() {
   });
 
   const isLoading = invoicesLoading || riskLoading;
+  const invoices = invoicesData?.data || [];
+  const risks = riskData?.data || [];
+
+  // Create a map of invoice_id to risk data with parsed reasons
+  // This must be before any conditional returns to follow Rules of Hooks
+  const riskMap = useMemo(() => {
+    const map = new Map<string, { risk: RiskAnomaly; parsed: ReturnType<typeof parseReasons> }>();
+    risks.forEach((risk) => {
+      const parsed = parseReasons(risk.reasons);
+      map.set(risk.invoice_id, { risk, parsed });
+    });
+    return map;
+  }, [risks]);
+
+  // Filter invoices by risk level if filterRiskLevel is provided
+  const filteredInvoices = useMemo(() => {
+    if (!filterRiskLevel) return invoices;
+    
+    return invoices.filter((invoice) => {
+      const riskData = riskMap.get(invoice.invoice_id);
+      return riskData?.risk?.risk_level === filterRiskLevel;
+    });
+  }, [invoices, filterRiskLevel, riskMap]);
 
   const toggleRow = (invoiceId: string) => {
     const newExpanded = new Set(expandedRows);
@@ -61,16 +88,6 @@ export default function InvoicesTable() {
     );
   }
 
-  const invoices = invoicesData?.data || [];
-  const risks = riskData?.data || [];
-
-  // Create a map of invoice_id to risk data with parsed reasons
-  const riskMap = new Map<string, { risk: RiskAnomaly; parsed: ReturnType<typeof parseReasons> }>();
-  risks.forEach((risk) => {
-    const parsed = parseReasons(risk.reasons);
-    riskMap.set(risk.invoice_id, { risk, parsed });
-  });
-
   const openReasonsModal = (invoiceId: string, reasons: NormalizedReason[], aiMeta?: AiMeta) => {
     setReasonsModal({ invoiceId, reasons, aiMeta });
   };
@@ -84,11 +101,26 @@ export default function InvoicesTable() {
       <div className="p-6 border-b border-gray-200">
         <h2 className="text-xl font-semibold text-gray-900">Invoices</h2>
         <p className="text-sm text-gray-500 mt-1">
-          {invoices.length} total invoices
+          {filterRiskLevel 
+            ? `${filteredInvoices.length} of ${invoices.length} invoices` 
+            : `${invoices.length} total invoices`}
         </p>
       </div>
 
-      <div className="overflow-x-auto">
+      {filteredInvoices.length === 0 ? (
+        <div className="p-12 text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
+            <AlertCircle size={32} className="text-gray-400" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No invoices found</h3>
+          <p className="text-gray-500">
+            {filterRiskLevel 
+              ? `There are no invoices with ${getRiskConfig(filterRiskLevel).label} at this time.`
+              : 'No invoices available.'}
+          </p>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
@@ -116,7 +148,7 @@ export default function InvoicesTable() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {invoices.map((invoice) => {
+            {filteredInvoices.map((invoice) => {
               const riskData = riskMap.get(invoice.invoice_id);
               const risk = riskData?.risk;
               const parsed = riskData?.parsed;
@@ -308,6 +340,7 @@ export default function InvoicesTable() {
           </tbody>
         </table>
       </div>
+      )}
 
       {/* Reasons Modal */}
       {reasonsModal && (
