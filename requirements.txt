@@ -12,3 +12,4 @@ python-dotenv==1.0.1
 
 # HTTP / async utils (safe to have, used elsewhere in project)
 requests==2.31.0
+

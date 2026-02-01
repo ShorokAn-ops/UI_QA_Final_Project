@@ -13,6 +13,7 @@ jobs:
     strategy:
       matrix:
         node-version: [18.x, 20.x]
+        python-version: ['3.11']
 
     steps:
       - name: Checkout code
@@ -24,14 +25,26 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
 
-      - name: Install dependencies
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: Install Node dependencies
         run: npm install
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          playwright install chromium
 
       - name: Run lint
         run: npm run lint
         continue-on-error: false
 
-      - name: Run tests
+      - name: Run Node tests
         run: npm test
         if: always()
 
@@ -48,10 +61,35 @@ jobs:
             exit 1
           fi
 
+      - name: Start Next.js server
+        run: npm run dev &
+        env:
+          NODE_ENV: test
+
+      - name: Wait for server
+        run: |
+          echo "Waiting for Next.js server to start..."
+          timeout 60 bash -c 'until curl -f http://localhost:3001 > /dev/null 2>&1; do sleep 2; done' || echo "Server may not be ready"
+
+      - name: Run Playwright/pytest tests
+        run: pytest tests/ -v
+        env:
+          CI: true
+
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         if: success()
         with:
-          name: build-${{ matrix.node-version }}
+          name: build-node${{ matrix.node-version }}-py${{ matrix.python-version }}
           path: .next
+          retention-days: 7
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-node${{ matrix.node-version }}-py${{ matrix.python-version }}
+          path: |
+            test-results/
+            playwright-report/
           retention-days: 7

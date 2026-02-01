@@ -169,11 +169,10 @@ export default function InvoicesTable({ filterRiskLevel }: InvoicesTableProps) {
                       <div className="flex items-center gap-2">
                         <span>{invoice.invoice_id}</span>
                         {parsed?.hasAI && (
-                          <div className="group relative">
+                          <div className="group relative" title="AI-enriched risk analysis">
                             <Sparkles 
                               size={16} 
-                              className="text-purple-500 cursor-help" 
-                              title="AI-enriched risk analysis"
+                              className="text-purple-500 cursor-help"
                             />
                             {parsed.aiMeta && (
                               <div className="hidden group-hover:block absolute z-10 left-0 top-6 bg-gray-900 text-white text-xs rounded-lg py-2 px-3 whitespace-pre-line shadow-lg min-w-[200px]">
