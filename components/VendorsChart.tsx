@@ -96,10 +96,12 @@ export default function VendorsChart() {
             <Legend 
               verticalAlign="bottom" 
               height={36}
-              formatter={(value, entry) => {
-                const data = entry.payload;
-                return `${value} (${data.value} risky invoices)`;
+              formatter={(value, _name, props: any) => {
+                const payload = props?.payload;
+                const riskyCount = payload?.value ?? 0;
+                return `${value} (${riskyCount} risky invoices)`;
               }}
+
             />
           </PieChart>
         </ResponsiveContainer>
