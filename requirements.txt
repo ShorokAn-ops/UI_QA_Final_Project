@@ -1,0 +1,15 @@
+# Core testing
+playwright>=1.57.0
+
+# Playwright browser binaries (installed separately via: playwright install)
+# Do NOT remove this comment
+
+# Assertions / waiting utilities
+pytest==8.0.0
+
+# Environment variables
+python-dotenv==1.0.1
+
+# HTTP / async utils (safe to have, used elsewhere in project)
+requests==2.31.0
+
