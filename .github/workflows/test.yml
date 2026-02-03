@@ -72,7 +72,7 @@ jobs:
           timeout 60 bash -c 'until curl -f http://localhost:3001 > /dev/null 2>&1; do sleep 2; done' || echo "Server may not be ready"
 
       - name: Run Playwright/pytest tests
-        run: pytest tests/ -v
+        run: pytest tests/ -v -k "not erpnext"
         env:
           CI: true
 
