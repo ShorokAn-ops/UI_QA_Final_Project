@@ -1,21 +1,25 @@
 'use client';
 
+import { Suspense, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { RiskLevel } from '@/types/api';
 import { RISK_CONFIG } from '@/lib/risk-config';
 import InvoicesTable from '@/components/InvoicesTable';
 
-export default function InvoicesPage() {
+function InvoicesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const riskLevelParam = searchParams?.get('risk_level') as RiskLevel | null;
+  const [isPending, startTransition] = useTransition();
 
   const handleFilterChange = (newFilter: RiskLevel | 'ALL') => {
-    if (newFilter === 'ALL') {
-      router.push('/invoices');
-    } else {
-      router.push(`/invoices?risk_level=${newFilter}`);
-    }
+    startTransition(() => {
+      if (newFilter === 'ALL') {
+        router.push('/invoices');
+      } else {
+        router.push(`/invoices?risk_level=${newFilter}`);
+      }
+    });
   };
 
   return (
@@ -59,5 +63,13 @@ export default function InvoicesPage() {
       
       <InvoicesTable filterRiskLevel={riskLevelParam} />
     </div>
+  );
+}
+
+export default function InvoicesPage() {
+  return (
+    <Suspense fallback={<div className="p-4">Loading invoices...</div>}>
+      <InvoicesContent />
+    </Suspense>
   );
 }

@@ -41,8 +41,8 @@ export default function InvoicesTable({ filterRiskLevel }: InvoicesTableProps) {
   });
 
   const isLoading = invoicesLoading || riskLoading;
-  const invoices = invoicesData?.data || [];
-  const risks = riskData?.data || [];
+  const invoices = useMemo(() => invoicesData?.data || [], [invoicesData]);
+  const risks = useMemo(() => riskData?.data || [], [riskData]);
 
   // Create a map of invoice_id to risk data with parsed reasons
   // This must be before any conditional returns to follow Rules of Hooks

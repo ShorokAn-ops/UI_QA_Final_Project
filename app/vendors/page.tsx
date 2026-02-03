@@ -1,14 +1,16 @@
 'use client';
 
+import { Suspense, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api-client';
 import VendorsTable from '@/components/VendorsTable';
 
-export default function VendorsPage() {
+function VendorsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const vendorParam = searchParams?.get('vendor');
+  const [isPending, startTransition] = useTransition();
 
   const { data: vendorsData } = useQuery({
     queryKey: ['vendors-analytics'],
@@ -19,12 +21,14 @@ export default function VendorsPage() {
   const vendorNames = vendors.map(v => v.supplier).sort();
 
   const handleFilterChange = (vendorName: string) => {
-    if (vendorName && vendorName !== 'ALL') {
-      const encoded = encodeURIComponent(vendorName);
-      router.push(`/vendors?vendor=${encoded}`);
-    } else {
-      router.push('/vendors');
-    }
+    startTransition(() => {
+      if (vendorName && vendorName !== 'ALL') {
+        const encoded = encodeURIComponent(vendorName);
+        router.push(`/vendors?vendor=${encoded}`);
+      } else {
+        router.push('/vendors');
+      }
+    });
   };
 
   return (
@@ -69,5 +73,13 @@ export default function VendorsPage() {
       
       <VendorsTable filterVendor={vendorParam ? decodeURIComponent(vendorParam) : undefined} />
     </div>
+  );
+}
+
+export default function VendorsPage() {
+  return (
+    <Suspense fallback={<div className="p-4">Loading vendors...</div>}>
+      <VendorsContent />
+    </Suspense>
   );
 }
