@@ -43,8 +43,9 @@ export default function VendorsTable({ filterVendor }: VendorsTableProps) {
     );
   }
 
-  const vendors = vendorsData?.data?.rows || [];
-  const anomalies = anomaliesData?.data || [];
+  // ✅ FIX: api-client already unwraps json.data
+  const vendors = vendorsData?.rows || [];
+  const anomalies = anomaliesData || [];
 
   // Filter vendors based on filterVendor prop
   const filteredVendors = filterVendor

@@ -37,7 +37,8 @@ export default function VendorsChart() {
     );
   }
 
-  const vendors = data?.data?.rows || [];
+  // ✅ FIX: api-client already unwraps json.data
+  const vendors = data?.rows || [];
 
   // Calculate total risk invoices per vendor for pie chart
   const pieData = vendors
@@ -96,12 +97,10 @@ export default function VendorsChart() {
             <Legend 
               verticalAlign="bottom" 
               height={36}
-              formatter={(value, _name, props: any) => {
-                const payload = props?.payload;
-                const riskyCount = payload?.value ?? 0;
-                return `${value} (${riskyCount} risky invoices)`;
+              formatter={(value, entry) => {
+                const data = entry.payload;
+                return `${value} (${data.value} risky invoices)`;
               }}
-
             />
           </PieChart>
         </ResponsiveContainer>

@@ -9,14 +9,27 @@
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api-client';
-import { TrendingUp, Users, FileText, AlertTriangle } from 'lucide-react';
+import { TrendingUp, Users, FileText, AlertTriangle, RefreshCw } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 export default function DashboardSummary() {
   const router = useRouter();
-  const { data, isLoading } = useQuery({
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  
+  const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ['dashboard-summary'],
     queryFn: api.getDashboardSummary,
+    refetchInterval: 5000, // 🔄 Poll every 5 seconds for real-time updates
+    refetchOnWindowFocus: true, // Refetch when tab becomes active
   });
+
+  // Update timestamp when data changes
+  useEffect(() => {
+    if (data) {
+      setLastUpdated(new Date());
+      console.log('[DashboardSummary] Data refreshed at:', new Date().toLocaleTimeString());
+    }
+  }, [data]);
 
   if (isLoading) {
     return (
@@ -31,7 +44,10 @@ export default function DashboardSummary() {
     );
   }
 
-  const summary = data?.data;
+  // ✅ FIX: api-client already unwraps json.data, so 'data' IS the summary
+  const summary = data;
+  
+  console.log('[DashboardSummary] Received data:', summary);
 
   const cards = [
     {
@@ -70,9 +86,32 @@ export default function DashboardSummary() {
     },
   ];
 
+  const handleManualRefresh = () => {
+    console.log('[DashboardSummary] Manual refresh triggered');
+    refetch();
+  };
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-      {cards.map((card) => {
+    <div>
+      {/* Refresh Controls */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3 text-sm text-gray-600">
+          <span>Last updated: {lastUpdated.toLocaleTimeString()}</span>
+          <span className="text-xs text-gray-400">• Auto-refresh every 5s</span>
+        </div>
+        <button
+          onClick={handleManualRefresh}
+          disabled={isFetching}
+          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          title="Refresh dashboard data"
+        >
+          <RefreshCw size={16} className={isFetching ? 'animate-spin' : ''} />
+          {isFetching ? 'Refreshing...' : 'Refresh Now'}
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {cards.map((card) => {
         const Icon = card.icon;
         return (
           <div
@@ -92,6 +131,7 @@ export default function DashboardSummary() {
           </div>
         );
       })}
+      </div>
     </div>
   );
 }

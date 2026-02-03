@@ -33,16 +33,21 @@ export default function InvoicesTable({ filterRiskLevel }: InvoicesTableProps) {
   const { data: invoicesData, isLoading: invoicesLoading } = useQuery({
     queryKey: ['invoices'],
     queryFn: () => api.getInvoices(100, true),
+    refetchInterval: 5000, // 🔄 Poll every 5 seconds for new invoices
+    refetchOnWindowFocus: true,
   });
 
   const { data: riskData, isLoading: riskLoading } = useQuery({
     queryKey: ['risk-anomalies'],
     queryFn: () => api.getRiskAnomalies(0.0),
+    refetchInterval: 5000, // 🔄 Poll every 5 seconds for new risk data
+    refetchOnWindowFocus: true,
   });
 
   const isLoading = invoicesLoading || riskLoading;
-  const invoices = invoicesData?.data || [];
-  const risks = riskData?.data || [];
+  // ✅ FIX: api-client already unwraps json.data
+  const invoices = invoicesData || [];
+  const risks = riskData || [];
 
   // Create a map of invoice_id to risk data with parsed reasons
   // This must be before any conditional returns to follow Rules of Hooks

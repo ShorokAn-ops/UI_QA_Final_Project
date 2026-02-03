@@ -1,11 +1,13 @@
 import time
 import unittest
+import pytest
 from tests.ui.base_test import BaseUITest
 from tests.ui.pages.invoices_page import InvoicesPage
 from tests.ui.utils.erpnext_api import create_purchase_invoice_critical
 from tests.ui.utils.backend_api import run_backend_sync
 
 
+@pytest.mark.erpnext_integration
 class TestERPNextToUIFlow(BaseUITest):
     def test_invoice_appears_with_correct_risk(self):
         invoice_id = create_purchase_invoice_critical()

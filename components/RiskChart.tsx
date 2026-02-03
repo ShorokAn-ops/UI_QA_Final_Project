@@ -21,6 +21,8 @@ export default function RiskChart() {
   const { data, isLoading } = useQuery({
     queryKey: ['dashboard-summary'],
     queryFn: api.getDashboardSummary,
+    refetchInterval: 5000, // 🔄 Poll every 5 seconds (synced with dashboard)
+    refetchOnWindowFocus: true,
   });
 
   const handleRiskLevelClick = (riskLevel: RiskLevel) => {
@@ -37,7 +39,8 @@ export default function RiskChart() {
     );
   }
 
-  const summary = data?.data;
+  // ✅ FIX: api-client already unwraps json.data
+  const summary = data;
   
   // Prepare chart data using backend risk counts
   const chartData = RISK_LEVEL_ORDER.map((level) => ({
