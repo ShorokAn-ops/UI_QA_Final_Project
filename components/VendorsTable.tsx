@@ -117,18 +117,21 @@ export default function VendorsTable({ filterVendor }: VendorsTableProps) {
                       {hasCriticalRisk && (
                         <AlertCircle size={16} className="text-red-500" />
                       )}
-                      {hasAI && (
-                        <div className="group relative">
-                          <Sparkles 
-                            size={14} 
-                            className="text-purple-500 cursor-help" 
-                            title="AI-enriched analysis available"
-                          />
-                          <div className="hidden group-hover:block absolute z-10 left-0 top-6 bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap shadow-lg">
-                            AI-enriched analysis
-                          </div>
+                     {hasAI && (
+                      <div
+                        className="group relative"
+                        title="AI-enriched analysis available"
+                      >
+                        <Sparkles
+                          size={14}
+                          className="text-purple-500 cursor-help"
+                        />
+                        <div className="hidden group-hover:block absolute z-10 left-0 top-6 bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap shadow-lg">
+                          AI-enriched analysis
                         </div>
-                      )}
+                      </div>
+                    )}
+
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">
