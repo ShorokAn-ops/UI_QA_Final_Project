@@ -68,11 +68,17 @@ jobs:
           HEADLESS: '1'
           GITHUB_ACTIONS: true
           APP_URL: http://localhost:3001
-          # ERPNext env vars (use GitHub Secrets or set defaults)
-          ERPNEXT_URL: ${{ secrets.ERPNEXT_URL || 'https://demo.erpnext.com' }}
-          ERPNEXT_API_KEY: ${{ secrets.ERPNEXT_API_KEY || '' }}
-          ERPNEXT_API_SECRET: ${{ secrets.ERPNEXT_API_SECRET || '' }}
+          # ERPNext connection (use GitHub Secrets)
+          ERPNEXT_BASE_URL: ${{ secrets.ERPNEXT_BASE_URL || secrets.ERPNEXT_URL || 'https://demo.erpnext.com' }}
+          ERPNEXT_API_KEY: ${{ secrets.ERPNEXT_API_KEY || 'demo_key' }}
+          ERPNEXT_API_SECRET: ${{ secrets.ERPNEXT_API_SECRET || 'demo_secret' }}
           ERPNEXT_COMPANY: ${{ secrets.ERPNEXT_COMPANY || 'Demo Company' }}
+          ERPNEXT_ITEM_ID: ${{ secrets.ERPNEXT_ITEM_ID || 'Demo Item' }}
+          ERPNEXT_SUPPLIER: ${{ secrets.ERPNEXT_SUPPLIER || 'Demo Supplier' }}
+          # Optional ERPNext settings
+          ERPNEXT_CURRENCY: ${{ secrets.ERPNEXT_CURRENCY || 'USD' }}
+          ERPNEXT_CONVERSION_RATE: ${{ secrets.ERPNEXT_CONVERSION_RATE || '1' }}
+        continue-on-error: true
 
       # Stop server and show logs
       - name: Stop Next.js server
