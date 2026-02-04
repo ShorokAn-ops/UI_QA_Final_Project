@@ -32,7 +32,7 @@ export default function InvoicesTable({ filterRiskLevel }: InvoicesTableProps) {
 
   const { data: invoicesData, isLoading: invoicesLoading } = useQuery({
     queryKey: ['invoices'],
-    queryFn: () => api.getInvoices(100, true),
+    queryFn: () => api.getInvoices(500, true),
   });
 
   const { data: riskData, isLoading: riskLoading } = useQuery({
