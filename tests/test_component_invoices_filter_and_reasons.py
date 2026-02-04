@@ -64,6 +64,14 @@ class TestComponent_InvoicesFilterAndReasons(unittest.TestCase):
         risk_page = RiskUIInvoicesPage(self.page, self.RISK_UI_URL)
         risk_page.open()
         
+        try:
+            visit_btn = self.page.get_by_role("button", name="Visit Site")
+            if visit_btn.is_visible(timeout=3000):
+                visit_btn.click()
+                self.page.wait_for_load_state("domcontentloaded")
+        except Exception:
+            pass
+
         # STEP 2: Apply risk filter (waits until UI updates inside the POM)
         risk_page.set_risk_filter(self.FILTER_LABEL)
         

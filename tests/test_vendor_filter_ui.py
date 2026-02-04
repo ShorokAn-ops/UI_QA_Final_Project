@@ -8,6 +8,15 @@ class TestVendorsFilter(BaseUITest):
         vendor_name = "NovaTech Trading"
 
         ui = VendorsPage(self.page).open()
+        # OPTIONAL: Close "Visit Site" overlay if it appears (ngrok / hosting splash)
+        try:
+            visit_btn = self.page.get_by_role("button", name="Visit Site")
+            if visit_btn.is_visible(timeout=3000):
+                visit_btn.click()
+                self.page.wait_for_load_state("domcontentloaded")
+        except Exception:
+            pass
+
         ui.set_vendor_filter(vendor_name)
 
         ui.assert_all_rows_match_vendor(vendor_name)
