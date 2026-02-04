@@ -1,0 +1,6 @@
+# UI Testing dependencies
+pytest==8.0.0
+playwright>=1.57.0
+allure-pytest==2.13.5
+requests==2.31.0
+python-dotenv==1.0.1

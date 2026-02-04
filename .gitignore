@@ -69,6 +69,10 @@ MANIFEST
 .coverage
 htmlcov/
 
+# Allure
+allure-results/
+allure-report/
+
 # IDEs
 .vscode/
 .idea/

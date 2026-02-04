@@ -1,0 +1,90 @@
+name: UI Tests with Allure
+
+on:
+  workflow_dispatch: # Manual trigger
+  pull_request:
+    branches: [main, master, develop]
+
+jobs:
+  ui-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      # 3. Setup Python
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        run: pip install -r tests/ui/requirements.txt
+
+      # 4. Install Playwright browsers
+      - name: Install Playwright browsers
+        run: python -m playwright install --with-deps chromium
+
+      # 5. Start Next.js in background
+      - name: Build Next.js
+        run: npm run build
+
+      - name: Start Next.js server
+        run: npm run dev &
+        env:
+          NODE_ENV: test
+
+      # 6. Wait for server to be ready
+      - name: Wait for Next.js server
+        run: |
+          echo "Waiting for server at http://localhost:3001..."
+          timeout 60 bash -c 'until curl -f http://localhost:3001 > /dev/null 2>&1; do echo "Waiting..."; sleep 2; done'
+          echo "Server is ready!"
+
+      # 7. Run Playwright tests with Allure
+      - name: Run UI tests
+        run: pytest tests/ui -v --tb=short --alluredir=allure-results
+        env:
+          CI: true
+          HEADLESS: '1'
+
+      # 8. Generate Allure HTML report
+      - name: Install Allure CLI
+        if: always()
+        run: |
+          wget https://github.com/allure-framework/allure2/releases/download/2.25.0/allure-2.25.0.tgz
+          tar -zxf allure-2.25.0.tgz -C /opt
+          sudo ln -s /opt/allure-2.25.0/bin/allure /usr/bin/allure
+
+      - name: Generate Allure report
+        if: always()
+        run: allure generate allure-results -o allure-report --clean
+
+      # 9. Upload artifacts
+      - name: Upload Allure results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results
+          path: allure-results
+          retention-days: 7
+
+      - name: Upload Allure report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-report
+          path: allure-report
+          retention-days: 7
