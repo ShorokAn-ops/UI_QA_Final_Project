@@ -20,9 +20,14 @@ def _auth_headers() -> dict:
 
 def create_purchase_invoice_critical() -> str:
     """
-    Create a Purchase Invoice in ERPNext that should result in CRITICAL risk.
+    Create a Purchase Invoice in ERPNext (Draft / Save only).
     Returns ERPNext invoice_id (name).
     """
+    import uuid
+    import time
+    import json
+    import datetime
+    import requests
 
     base_url = _erp_base_url()
     url = f"{base_url}/api/resource/Purchase%20Invoice"
@@ -34,41 +39,74 @@ def create_purchase_invoice_critical() -> str:
     currency = optional_env("ERPNEXT_CURRENCY", "USD")
     conversion_rate = float(optional_env("ERPNEXT_CONVERSION_RATE", "1"))
 
+    # Unique marker so we can find the invoice even if POST times out
+    marker = f"ui-test-draft-critical-{uuid.uuid4()}"
+
     payload = {
         "supplier": supplier,
         "company": company,
         "posting_date": datetime.date.today().isoformat(),
         "currency": currency,
         "conversion_rate": conversion_rate,
+        "remarks": marker,
+        "docstatus": 0,  # Explicitly keep Draft
         "items": [
             {
                 "item_code": item_code,
                 "qty": 30,
-                "rate":10000.0,
+                "rate": 10000.0,
             }
         ],
     }
 
-    response = requests.post(
-        url,
-        headers=_auth_headers(),
-        data=json.dumps(payload),
-        timeout=45,
-    )
-
-    if not response.ok:
-        raise RuntimeError(
-            "ERPNext create Purchase Invoice failed:\n"
-            f"Status: {response.status_code}\n"
-            f"URL: {url}\n"
-            f"Payload: {json.dumps(payload, indent=2)}\n"
-            f"Response: {response.text}"
+    try:
+        # Prefer json=payload; and allow slower ERPNext responses
+        response = requests.post(
+            url,
+            headers=_auth_headers(),
+            json=payload,
+            timeout=(45, 180),
         )
 
-    data = response.json()
-    invoice_id = (data.get("data") or {}).get("name")
+        if not response.ok:
+            raise RuntimeError(
+                "ERPNext create Purchase Invoice failed:\n"
+                f"Status: {response.status_code}\n"
+                f"URL: {url}\n"
+                f"Payload: {json.dumps(payload, indent=2)}\n"
+                f"Response: {response.text}"
+            )
 
-    if not invoice_id:
-        raise RuntimeError(f"ERPNext response missing invoice name: {response.text}")
+        data = response.json()
+        invoice_id = (data.get("data") or {}).get("name")
+        if invoice_id:
+            return invoice_id
 
-    return invoice_id
+    except requests.exceptions.ReadTimeout:
+        # ERPNext may have saved the invoice but didn't respond in time
+        pass
+
+    # Fallback: search for the created Draft invoice by remarks marker
+    search_url = f"{base_url}/api/resource/Purchase%20Invoice"
+    params = {
+        "fields": '["name","remarks","docstatus","creation"]',
+        "filters": json.dumps([
+            ["Purchase Invoice", "remarks", "=", marker],
+            ["Purchase Invoice", "docstatus", "=", 0],
+        ]),
+        "limit_page_length": 1,
+        "order_by": "creation desc",
+    }
+
+    for _ in range(8):
+        time.sleep(2)
+        r = requests.get(search_url, headers=_auth_headers(), params=params)
+        if r.ok:
+            rows = (r.json().get("data") or [])
+            if rows:
+                return rows[0]["name"]
+
+    raise RuntimeError(
+        "ERPNext invoice may have been saved as Draft but could not be confirmed.\n"
+        f"Marker: {marker}"
+    )
