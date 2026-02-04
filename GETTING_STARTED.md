@@ -100,7 +100,7 @@ npm run lint
 | Endpoint | Purpose |
 |----------|---------|
 | `GET /health` | Check backend status |
-| `GET /invoices?limit=100&include_items=true` | Get all invoices with items |
+| `GET /invoices?limit=500&include_items=true` | Get all invoices with items |
 | `GET /risk/anomalies?min_rate=0.6` | Get risk analysis |
 | `GET /risk/vendors?min_rate=0.6` | Get vendor statistics |
 | `GET /dashboard/summary` | Get KPI summary |
