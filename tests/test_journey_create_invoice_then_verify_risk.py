@@ -21,7 +21,7 @@ class TestERPNextToUIFlow(BaseUITest):
             try:
                 invoices.expect_invoice_visible(invoice_id)
                 invoices.expect_invoice_risk_level(invoice_id, "CRITICAL")
-                self.page.wait_for_timeout(3000)  # wait 3 seconds to observe the result
+                self.page.wait_for_timeout(60000)  # wait 60 seconds to observe the result
 
                 return  # Test passed
 

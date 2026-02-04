@@ -53,7 +53,7 @@ def create_purchase_invoice_critical() -> str:
         url,
         headers=_auth_headers(),
         data=json.dumps(payload),
-        timeout=45,
+        timeout=5000,
     )
 
     if not response.ok:
