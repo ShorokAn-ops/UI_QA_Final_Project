@@ -65,6 +65,15 @@ class TestDashboardToInvoicesCriticalFlow(BaseUITest):
         dashboard.open()
         print("✓ Dashboard loaded successfully")
         
+        # OPTIONAL: Close "Visit Site" overlay if it appears
+        try:
+            visit_btn = self.page.get_by_role("button", name="Visit Site")
+            if visit_btn.is_visible(timeout=3000):
+                visit_btn.click()
+                self.page.wait_for_load_state("domcontentloaded")
+        except Exception:
+            pass
+        
         # Step 2: Get the count of Critical invoices (for later validation)
         print("\nStep 2: Getting Critical invoice count from Dashboard...")
         try:
