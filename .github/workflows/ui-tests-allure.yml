@@ -62,6 +62,7 @@ jobs:
         env:
           CI: true
           HEADLESS: '1'
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL || 'http://localhost:8081' }}
           ERPNEXT_BASE_URL: ${{ secrets.ERPNEXT_BASE_URL || 'http://localhost:8080' }}
           ERPNEXT_API_KEY: ${{ secrets.ERPNEXT_API_KEY }}
           ERPNEXT_API_SECRET: ${{ secrets.ERPNEXT_API_SECRET }}
