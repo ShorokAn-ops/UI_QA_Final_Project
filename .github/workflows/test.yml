@@ -72,7 +72,7 @@ jobs:
           ERPNEXT_BASE_URL: ${{ secrets.ERPNEXT_BASE_URL || secrets.ERPNEXT_URL || 'https://demo.erpnext.com' }}
           ERPNEXT_API_KEY: ${{ secrets.ERPNEXT_API_KEY || 'demo_key' }}
           ERPNEXT_API_SECRET: ${{ secrets.ERPNEXT_API_SECRET || 'demo_secret' }}
-                continue-on-error: true
+        continue-on-error: true
 
       # Stop server and show logs
       - name: Stop Next.js server
