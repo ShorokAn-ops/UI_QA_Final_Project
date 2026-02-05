@@ -1,7 +1,7 @@
 name: UI Tests with Allure
 
 on:
-  workflow_dispatch:
+  workflow_dispatch: # Manual trigger
   pull_request:
     branches: [main, master, develop]
 
@@ -10,149 +10,69 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1) Checkout
+      # 1. Checkout code
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2) Node.js
+      # 2. Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
-          cache: "npm"
+          node-version: '20'
+          cache: 'npm'
 
       - name: Install Node dependencies
         run: npm ci
 
-      # 3) Python
+      # 3. Setup Python
       - name: Setup Python 3.11
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: '3.11'
 
-      # ✅ Ensure uvicorn exists in GitHub runner
-      - name: Install Backend runtime (uvicorn + fastapi)
-        run: pip install "uvicorn[standard]" fastapi
-
-      # Optional: install backend deps if repo has them
-      - name: Install Backend Python dependencies (if present)
-        run: |
-          if [ -f "requirements.txt" ]; then
-            echo "Found requirements.txt - installing backend deps..."
-            pip install -r requirements.txt
-          else
-            echo "No requirements.txt found. Skipping backend deps install."
-          fi
-
-      # UI test deps
-      - name: Install UI test Python dependencies
+      - name: Install Python dependencies
         run: pip install -r tests/ui/requirements.txt
 
-      # 4) Playwright browsers
+      # 4. Install Playwright browsers
       - name: Install Playwright browsers
         run: python -m playwright install --with-deps chromium
 
-      # -----------------------------
-      # BACKEND (FastAPI)
-      # -----------------------------
-      - name: Start Backend server (FastAPI)
-        run: |
-          echo "Starting backend..."
-          nohup python -m uvicorn app:app --host 0.0.0.0 --port 8081 > backend.log 2>&1 &
-          echo "Backend started. Sleeping 2s..."
-          sleep 2
-
-          echo "=== backend.log (first 200 lines) ==="
-          sed -n '1,200p' backend.log || true
-
-          echo "=== listening ports (8081) ==="
-          sudo ss -ltnp | grep 8081 || true
-        env:
-          ERPNEXT_BASE_URL: ${{ secrets.ERPNEXT_BASE_URL }}
-          ERPNEXT_API_KEY: ${{ secrets.ERPNEXT_API_KEY }}
-          ERPNEXT_API_SECRET: ${{ secrets.ERPNEXT_API_SECRET }}
-          ERPNEXT_COMPANY: ${{ secrets.ERPNEXT_COMPANY }}
-
-      - name: Wait for Backend server
-        run: |
-          echo "Waiting for backend at http://localhost:8081/health ..."
-          for i in {1..60}; do
-            if curl -fsS http://localhost:8081/health > /dev/null 2>&1; then
-              echo "Backend is ready!"
-              exit 0
-            fi
-            echo "Waiting backend... ($i/60)"
-            sleep 1
-          done
-
-          echo "Backend did not become ready. Dumping logs:"
-          echo "=== backend.log (last 300 lines) ==="
-          tail -n 300 backend.log || true
-
-          echo "=== processes (uvicorn/python) ==="
-          ps aux | grep -E "uvicorn|python" | grep -v grep || true
-
-          echo "=== listening ports (8081) ==="
-          sudo ss -ltnp | grep 8081 || true
-
-          exit 1
-
-      # -----------------------------
-      # FRONTEND (Next.js)
-      # -----------------------------
+      # 5. Start Next.js in background
       - name: Build Next.js
         run: npm run build
         env:
-          NEXT_PUBLIC_API_URL: "http://localhost:8081"
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL || 'http://localhost:8081' }}
 
       - name: Start Next.js server
-        run: |
-          echo "Starting Next.js..."
-          nohup npm run dev -- --port 3001 > frontend.log 2>&1 &
-          sleep 2
-          echo "=== frontend.log (first 200 lines) ==="
-          sed -n '1,200p' frontend.log || true
+        run: npm run dev &
         env:
           NODE_ENV: test
-          NEXT_PUBLIC_API_URL: "http://localhost:8081"
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL || 'http://localhost:8081' }}
 
+      # 6. Wait for server to be ready
       - name: Wait for Next.js server
         run: |
-          echo "Waiting for frontend at http://localhost:3001..."
-          for i in {1..60}; do
-            if curl -fsS http://localhost:3001 > /dev/null 2>&1; then
-              echo "Frontend is ready!"
-              exit 0
-            fi
-            echo "Waiting frontend... ($i/60)"
-            sleep 1
-          done
+          echo "Waiting for server at http://localhost:3001..."
+          timeout 60 bash -c 'until curl -f http://localhost:3001 > /dev/null 2>&1; do echo "Waiting..."; sleep 2; done'
+          echo "Server is ready!"
 
-          echo "Frontend did not become ready. Dumping logs:"
-          echo "=== frontend.log (last 300 lines) ==="
-          tail -n 300 frontend.log || true
-          exit 1
-
-      # -----------------------------
-      # TESTS (Pytest + Allure)
-      # -----------------------------
-      - name: Run UI tests (Pytest + Allure)
+      # 7. Run Playwright tests with Allure
+      - name: Run UI tests
         run: pytest tests/ui -v --tb=short --alluredir=allure-results
         env:
-          CI: "true"
-          HEADLESS: "1"
-          UI_URL: "http://localhost:3001"
-          BACKEND_BASE_URL: "http://localhost:8081"
-
-          # ERPNext (needed for create invoice journey test)
-          ERPNEXT_BASE_URL: ${{ secrets.ERPNEXT_BASE_URL }}
+          CI: true
+          HEADLESS: '1'
+          ERPNEXT_BASE_URL: ${{ secrets.ERPNEXT_BASE_URL || 'http://localhost:8080' }}
           ERPNEXT_API_KEY: ${{ secrets.ERPNEXT_API_KEY }}
           ERPNEXT_API_SECRET: ${{ secrets.ERPNEXT_API_SECRET }}
           ERPNEXT_COMPANY: ${{ secrets.ERPNEXT_COMPANY }}
+          ERPNEXT_ITEM_ID: ${{ secrets.ERPNEXT_ITEM_ID }}
+          ERPNEXT_SUPPLIER: ${{ secrets.ERPNEXT_SUPPLIER || 'NovaTech Trading' }}
+          ERPNEXT_CURRENCY: ${{ secrets.ERPNEXT_CURRENCY || 'USD' }}
+          ERPNEXT_CONVERSION_RATE: ${{ secrets.ERPNEXT_CONVERSION_RATE || '1' }}
+          RISK_UI_URL: http://localhost:3001
 
-      # -----------------------------
-      # ALLURE REPORT
-      # -----------------------------
+      # 8. Generate Allure HTML report
       - name: Install Allure CLI
         if: always()
         run: |
@@ -164,9 +84,7 @@ jobs:
         if: always()
         run: allure generate allure-results -o allure-report --clean
 
-      # -----------------------------
-      # ARTIFACTS
-      # -----------------------------
+      # 9. Upload artifacts
       - name: Upload Allure results
         if: always()
         uses: actions/upload-artifact@v4
@@ -181,14 +99,4 @@ jobs:
         with:
           name: allure-report
           path: allure-report
-          retention-days: 7
-
-      - name: Upload server logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: server-logs
-          path: |
-            backend.log
-            frontend.log
           retention-days: 7
