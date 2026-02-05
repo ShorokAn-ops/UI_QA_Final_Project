@@ -14,7 +14,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2) Node
+      # 2) Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -30,17 +30,11 @@ jobs:
         with:
           python-version: "3.11"
 
-      # 4) Install Python deps for UI tests
-      - name: Install UI test Python dependencies
-        run: pip install -r tests/ui/requirements.txt
+      # ✅ Ensure uvicorn exists in GitHub runner
+      - name: Install Backend runtime (uvicorn + fastapi)
+        run: pip install "uvicorn[standard]" fastapi
 
-      # 5) Playwright browsers
-      - name: Install Playwright browsers
-        run: python -m playwright install --with-deps chromium
-
-      # -----------------------------
-      # BACKEND (FastAPI) - optional but recommended
-      # -----------------------------
+      # Optional: install backend deps if repo has them
       - name: Install Backend Python dependencies (if present)
         run: |
           if [ -f "requirements.txt" ]; then
@@ -50,11 +44,22 @@ jobs:
             echo "No requirements.txt found. Skipping backend deps install."
           fi
 
+      # UI test deps
+      - name: Install UI test Python dependencies
+        run: pip install -r tests/ui/requirements.txt
+
+      # 4) Playwright browsers
+      - name: Install Playwright browsers
+        run: python -m playwright install --with-deps chromium
+
+      # -----------------------------
+      # BACKEND (FastAPI)
+      # -----------------------------
       - name: Start Backend server (FastAPI)
         run: |
           echo "Starting backend..."
-          nohup uvicorn app:app --host 0.0.0.0 --port 8081 > backend.log 2>&1 &
-          echo "Backend PID: $!"
+          nohup python -m uvicorn app:app --host 0.0.0.0 --port 8081 > backend.log 2>&1 &
+          echo "Backend started. Sleeping 2s..."
           sleep 2
 
           echo "=== backend.log (first 200 lines) ==="
@@ -125,4 +130,65 @@ jobs:
 
           echo "Frontend did not become ready. Dumping logs:"
           echo "=== frontend.log (last 300 lines) ==="
-          tail -n 300 frontend.log
+          tail -n 300 frontend.log || true
+          exit 1
+
+      # -----------------------------
+      # TESTS (Pytest + Allure)
+      # -----------------------------
+      - name: Run UI tests (Pytest + Allure)
+        run: pytest tests/ui -v --tb=short --alluredir=allure-results
+        env:
+          CI: "true"
+          HEADLESS: "1"
+          UI_URL: "http://localhost:3001"
+          BACKEND_BASE_URL: "http://localhost:8081"
+
+          # ERPNext (needed for create invoice journey test)
+          ERPNEXT_BASE_URL: ${{ secrets.ERPNEXT_BASE_URL }}
+          ERPNEXT_API_KEY: ${{ secrets.ERPNEXT_API_KEY }}
+          ERPNEXT_API_SECRET: ${{ secrets.ERPNEXT_API_SECRET }}
+          ERPNEXT_COMPANY: ${{ secrets.ERPNEXT_COMPANY }}
+
+      # -----------------------------
+      # ALLURE REPORT
+      # -----------------------------
+      - name: Install Allure CLI
+        if: always()
+        run: |
+          wget https://github.com/allure-framework/allure2/releases/download/2.25.0/allure-2.25.0.tgz
+          tar -zxf allure-2.25.0.tgz -C /opt
+          sudo ln -s /opt/allure-2.25.0/bin/allure /usr/bin/allure
+
+      - name: Generate Allure report
+        if: always()
+        run: allure generate allure-results -o allure-report --clean
+
+      # -----------------------------
+      # ARTIFACTS
+      # -----------------------------
+      - name: Upload Allure results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results
+          path: allure-results
+          retention-days: 7
+
+      - name: Upload Allure report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-report
+          path: allure-report
+          retention-days: 7
+
+      - name: Upload server logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-logs
+          path: |
+            backend.log
+            frontend.log
+          retention-days: 7
