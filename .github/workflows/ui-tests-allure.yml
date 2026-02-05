@@ -48,6 +48,14 @@ jobs:
         env:
           NODE_ENV: test
           NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL || 'http://localhost:8081' }}
+          ERPNEXT_BASE_URL: ${{ secrets.ERPNEXT_BASE_URL || 'http://localhost:8080' }}
+          ERPNEXT_API_KEY: ${{ secrets.ERPNEXT_API_KEY }}
+          ERPNEXT_API_SECRET: ${{ secrets.ERPNEXT_API_SECRET }}
+          ERPNEXT_COMPANY: ${{ secrets.ERPNEXT_COMPANY }}
+          ERPNEXT_ITEM_ID: ${{ secrets.ERPNEXT_ITEM_ID }}
+          ERPNEXT_SUPPLIER: ${{ secrets.ERPNEXT_SUPPLIER || 'NovaTech Trading' }}
+          ERPNEXT_CURRENCY: ${{ secrets.ERPNEXT_CURRENCY || 'USD' }}
+          ERPNEXT_CONVERSION_RATE: ${{ secrets.ERPNEXT_CONVERSION_RATE || '1' }}
 
       # 6. Wait for server to be ready
       - name: Wait for Next.js server
