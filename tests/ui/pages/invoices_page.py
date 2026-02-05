@@ -94,11 +94,19 @@ class InvoicesPage(BasePage):
         assert row_count > 0, "No invoice rows found in the table"
         
         # Check each row contains the expected risk level
+        risk_text = risk_level.capitalize()
         for i in range(row_count):
             row = rows.nth(i)
-            # The risk level appears as capitalized text in the row
-            risk_cell = row.get_by_text(risk_level.capitalize(), exact=False)
-            expect(risk_cell).to_be_visible(timeout=10_000)
+            # Wait for row to be visible first
+            expect(row).to_be_visible(timeout=10_000)
+            
+            # Check that the row contains the risk level text
+            # Use a more flexible approach that works in CI
+            row_text = row.inner_text()
+            assert risk_text in row_text, (
+                f"Row {i+1} does not contain '{risk_text}'. "
+                f"Row content: {row_text[:100]}"
+            )
 
     def wait_for_url_contains(self, text: str):
         """
