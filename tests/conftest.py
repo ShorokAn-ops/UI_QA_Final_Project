@@ -23,3 +23,4 @@ def page(context: BrowserContext) -> Iterator[Page]:
     p = context.new_page()
     yield p
     p.close()
+
