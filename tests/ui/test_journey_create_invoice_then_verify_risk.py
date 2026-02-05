@@ -9,6 +9,7 @@ from tests.ui.utils.erpnext_api import delete_purchase_invoice
 
 class TestERPNextToUIFlow(BaseUITest):
    
+    @unittest.skipIf(os.getenv("CI"), "Skipping in CI environment - requires ERPNext backend")
     def test_invoice_appears_with_correct_risk(self):
         invoice_id = create_purchase_invoice_critical()
 
@@ -33,7 +34,7 @@ class TestERPNextToUIFlow(BaseUITest):
                 try:
                     invoices.expect_invoice_visible(invoice_id)
                     invoices.expect_invoice_risk_level(invoice_id, "CRITICAL")
-                    self.page.wait_for_timeout(50000)
+                    self.page.wait_for_timeout(5000)
 
                     return  # ✅ Test passed
 
