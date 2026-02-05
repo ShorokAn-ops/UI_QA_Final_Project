@@ -52,3 +52,7 @@ class TestERPNextToUIFlow(BaseUITest):
                 delete_purchase_invoice(invoice_id)
             except Exception as e:
                 print(f"WARNING: failed to delete invoice {invoice_id}: {e}")
+
+
+if __name__ == "__main__":
+    unittest.main()

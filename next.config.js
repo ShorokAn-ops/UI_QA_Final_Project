@@ -8,9 +8,15 @@ const nextConfig = {
     "https://*.ngrok.app",
   ],
 
-  // Proxy API requests from frontend -> local backend (8081)
-  // This allows using a single ngrok tunnel (3001) for both FE + BE
+  // Proxy API requests from frontend -> backend
+  // In CI: uses NEXT_PUBLIC_API_URL
+  // Locally: proxies to localhost:8081
   async rewrites() {
+    // Skip rewrites in CI - use NEXT_PUBLIC_API_URL directly
+    if (process.env.CI) {
+      return [];
+    }
+    
     return [
       {
         source: "/api/:path*",

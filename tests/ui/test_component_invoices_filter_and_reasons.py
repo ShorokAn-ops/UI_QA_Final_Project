@@ -2,7 +2,7 @@
 #
 # Plan:
 # 1. Setup browser and navigate to Risk UI invoices page
-# 2. Apply risk filter = "Low Risk" using dropdown
+# 2. Apply risk filter = "High Risk" using dropdown
 # 3. Wait until filter is applied (observe counter/badge/table changes)
 # 4. Assert all visible rows show "High Risk" in Risk column
 # 5. Find and click "+X more" link in first 10 rows
