@@ -9,7 +9,7 @@ load_dotenv()
 
 class BaseUITest(unittest.TestCase):
     """
-    Base class for Playwright UI tests (NO pytest fixtures).
+    Base class for Playwright UI tests.
     One browser per test class, fresh context+page per test.
     """
 

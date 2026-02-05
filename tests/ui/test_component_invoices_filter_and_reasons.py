@@ -2,7 +2,7 @@
 #
 # Plan:
 # 1. Setup browser and navigate to Risk UI invoices page
-# 2. Apply risk filter = "High Risk" using dropdown
+# 2. Apply risk filter = "Low Risk" using dropdown
 # 3. Wait until filter is applied (observe counter/badge/table changes)
 # 4. Assert all visible rows show "High Risk" in Risk column
 # 5. Find and click "+X more" link in first 10 rows
@@ -14,9 +14,7 @@
 
 import os
 import unittest
-import pytest
 from playwright.sync_api import sync_playwright, expect
-
 from tests.pages.risk_ui_invoices_page import RiskUIInvoicesPage
 
 
@@ -76,9 +74,7 @@ class TestComponent_InvoicesFilterAndReasons(unittest.TestCase):
         # STEP 2: Wait for table to load, skip in CI if no backend data
         self.page.wait_for_timeout(2000)  # Give UI time to load
         table = self.page.locator("table tbody tr")
-        if os.getenv("CI") and table.count() == 0:
-            pytest.skip("CI: No backend data available - backend may not be accessible from CI environment")
-        
+       
         # STEP 3: Apply risk filter (waits until UI updates inside the POM)
         risk_page.set_risk_filter(self.FILTER_LABEL)
         
