@@ -49,10 +49,10 @@ jobs:
           NODE_ENV: test
           NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL || 'http://localhost:8081' }}
           ERPNEXT_BASE_URL: ${{ secrets.ERPNEXT_BASE_URL || 'http://localhost:8080' }}
-          ERPNEXT_API_KEY: ${{ secrets.ERPNEXT_API_KEY }}
-          ERPNEXT_API_SECRET: ${{ secrets.ERPNEXT_API_SECRET }}
-          ERPNEXT_COMPANY: ${{ secrets.ERPNEXT_COMPANY }}
-          ERPNEXT_ITEM_ID: ${{ secrets.ERPNEXT_ITEM_ID }}
+          ERPNEXT_API_KEY: ${{ secrets.ERPNEXT_API_KEY || 'demo_api_key' }}
+          ERPNEXT_API_SECRET: ${{ secrets.ERPNEXT_API_SECRET || 'demo_api_secret' }}
+          ERPNEXT_COMPANY: ${{ secrets.ERPNEXT_COMPANY || 'Demo Company' }}
+          ERPNEXT_ITEM_ID: ${{ secrets.ERPNEXT_ITEM_ID || 'Office Supplies' }}
           ERPNEXT_SUPPLIER: ${{ secrets.ERPNEXT_SUPPLIER || 'NovaTech Trading' }}
           ERPNEXT_CURRENCY: ${{ secrets.ERPNEXT_CURRENCY || 'USD' }}
           ERPNEXT_CONVERSION_RATE: ${{ secrets.ERPNEXT_CONVERSION_RATE || '1' }}
@@ -72,10 +72,10 @@ jobs:
           HEADLESS: '1'
           NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL || 'http://localhost:8081' }}
           ERPNEXT_BASE_URL: ${{ secrets.ERPNEXT_BASE_URL || 'http://localhost:8080' }}
-          ERPNEXT_API_KEY: ${{ secrets.ERPNEXT_API_KEY }}
-          ERPNEXT_API_SECRET: ${{ secrets.ERPNEXT_API_SECRET }}
-          ERPNEXT_COMPANY: ${{ secrets.ERPNEXT_COMPANY }}
-          ERPNEXT_ITEM_ID: ${{ secrets.ERPNEXT_ITEM_ID }}
+          ERPNEXT_API_KEY: ${{ secrets.ERPNEXT_API_KEY || 'demo_api_key' }}
+          ERPNEXT_API_SECRET: ${{ secrets.ERPNEXT_API_SECRET || 'demo_api_secret' }}
+          ERPNEXT_COMPANY: ${{ secrets.ERPNEXT_COMPANY || 'Demo Company' }}
+          ERPNEXT_ITEM_ID: ${{ secrets.ERPNEXT_ITEM_ID || 'Office Supplies' }}
           ERPNEXT_SUPPLIER: ${{ secrets.ERPNEXT_SUPPLIER || 'NovaTech Trading' }}
           ERPNEXT_CURRENCY: ${{ secrets.ERPNEXT_CURRENCY || 'USD' }}
           ERPNEXT_CONVERSION_RATE: ${{ secrets.ERPNEXT_CONVERSION_RATE || '1' }}
