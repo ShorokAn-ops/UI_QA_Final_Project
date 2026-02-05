@@ -33,7 +33,7 @@ class TestERPNextToUIFlow(BaseUITest):
                 try:
                     invoices.expect_invoice_visible(invoice_id)
                     invoices.expect_invoice_risk_level(invoice_id, "CRITICAL")
-                    self.page.wait_for_timeout(60000)
+                    self.page.wait_for_timeout(50000)
 
                     return  # ✅ Test passed
 
@@ -42,7 +42,7 @@ class TestERPNextToUIFlow(BaseUITest):
                     if attempt == 5:
                         raise last_error
 
-                    time.sleep(5)
+                    time.sleep(4)
                     self.page.reload(wait_until="domcontentloaded")
                     run_backend_sync()
 

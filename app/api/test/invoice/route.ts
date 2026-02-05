@@ -18,9 +18,20 @@ function authHeaders() {
 }
 
 export async function POST() {
-  if (!ERPNEXT_API_KEY || !ERPNEXT_API_SECRET || !ERPNEXT_COMPANY || !ERPNEXT_ITEM_ID) {
+  // Check for required environment variables
+  const missing: string[] = [];
+  if (!ERPNEXT_API_KEY) missing.push('ERPNEXT_API_KEY');
+  if (!ERPNEXT_API_SECRET) missing.push('ERPNEXT_API_SECRET');
+  if (!ERPNEXT_COMPANY) missing.push('ERPNEXT_COMPANY');
+  if (!ERPNEXT_ITEM_ID) missing.push('ERPNEXT_ITEM_ID');
+  
+  if (missing.length > 0) {
     return NextResponse.json(
-      { error: 'Missing required ERPNext configuration' },
+      { 
+        error: 'Missing required ERPNext configuration',
+        missing,
+        hint: 'Set these environment variables in .env.local or your CI configuration'
+      },
       { status: 500 }
     );
   }

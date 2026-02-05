@@ -30,12 +30,12 @@ export default function InvoicesTable({ filterRiskLevel }: InvoicesTableProps) {
     aiMeta?: AiMeta;
   } | null>(null);
 
-  const { data: invoicesData, isLoading: invoicesLoading } = useQuery({
+  const { data: invoicesData, isLoading: invoicesLoading, error: invoicesError } = useQuery({
     queryKey: ['invoices'],
     queryFn: () => api.getInvoices(500, true),
   });
 
-  const { data: riskData, isLoading: riskLoading } = useQuery({
+  const { data: riskData, isLoading: riskLoading, error: riskError } = useQuery({
     queryKey: ['risk-anomalies'],
     queryFn: () => api.getRiskAnomalies(0.0),
   });
@@ -65,6 +65,23 @@ export default function InvoicesTable({ filterRiskLevel }: InvoicesTableProps) {
     });
   }, [invoices, filterRiskLevel, riskMap]);
 
+  // Debug logging (dev/test mode only)
+  React.useEffect(() => {
+    const isDev = process.env.NODE_ENV === 'development' || process.env.CI === 'true';
+    if (isDev) {
+      if (invoicesError) console.error('[InvoicesTable] Failed to fetch invoices:', invoicesError);
+      if (riskError) console.error('[InvoicesTable] Failed to fetch risk data:', riskError);
+      if (!invoicesLoading && !riskLoading) {
+        console.log('[InvoicesTable] Data loaded:', {
+          invoices: invoices.length,
+          risks: risks.length,
+          filterRiskLevel,
+          filtered: filteredInvoices.length
+        });
+      }
+    }
+  }, [invoicesLoading, riskLoading, invoicesError, riskError, invoices.length, risks.length, filterRiskLevel, filteredInvoices.length]);
+
   const toggleRow = (invoiceId: string) => {
     const newExpanded = new Set(expandedRows);
     if (newExpanded.has(invoiceId)) {
@@ -75,14 +92,41 @@ export default function InvoicesTable({ filterRiskLevel }: InvoicesTableProps) {
     setExpandedRows(newExpanded);
   };
 
+  // Render table skeleton while loading - ALWAYS render table element
   if (isLoading) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-semibold mb-4 text-gray-900">Invoices</h2>
-        <div className="space-y-3">
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="h-16 bg-gray-100 rounded animate-pulse"></div>
-          ))}
+      <div className="bg-white rounded-lg shadow">
+        <div className="p-6 border-b border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-900">Invoices</h2>
+          <p className="text-sm text-gray-500 mt-1">Loading...</p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice ID</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice Date</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Amount</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Risk Level</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">REASONS</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {[...Array(5)].map((_, i) => (
+                <tr key={i}>
+                  <td className="px-6 py-4"><div className="h-5 w-5 bg-gray-200 rounded animate-pulse"></div></td>
+                  <td className="px-6 py-4"><div className="h-4 w-24 bg-gray-200 rounded animate-pulse"></div></td>
+                  <td className="px-6 py-4"><div className="h-4 w-32 bg-gray-200 rounded animate-pulse"></div></td>
+                  <td className="px-6 py-4"><div className="h-4 w-20 bg-gray-200 rounded animate-pulse"></div></td>
+                  <td className="px-6 py-4"><div className="h-4 w-16 bg-gray-200 rounded animate-pulse"></div></td>
+                  <td className="px-6 py-4"><div className="h-6 w-20 bg-gray-200 rounded-full animate-pulse"></div></td>
+                  <td className="px-6 py-4"><div className="h-4 w-40 bg-gray-200 rounded animate-pulse"></div></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     );
@@ -107,20 +151,8 @@ export default function InvoicesTable({ filterRiskLevel }: InvoicesTableProps) {
         </p>
       </div>
 
-      {filteredInvoices.length === 0 ? (
-        <div className="p-12 text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
-            <AlertCircle size={32} className="text-gray-400" />
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No invoices found</h3>
-          <p className="text-gray-500">
-            {filterRiskLevel 
-              ? `There are no invoices with ${getRiskConfig(filterRiskLevel).label} at this time.`
-              : 'No invoices available.'}
-          </p>
-        </div>
-      ) : (
-        <div className="overflow-x-auto">
+      {/* ALWAYS render table - show empty state inside tbody if no data */}
+      <div className="overflow-x-auto">
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
@@ -148,7 +180,22 @@ export default function InvoicesTable({ filterRiskLevel }: InvoicesTableProps) {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {filteredInvoices.map((invoice) => {
+            {filteredInvoices.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="px-6 py-12 text-center">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
+                    <AlertCircle size={32} className="text-gray-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No invoices found</h3>
+                  <p className="text-gray-500">
+                    {filterRiskLevel 
+                      ? `There are no invoices with ${getRiskConfig(filterRiskLevel).label} at this time.`
+                      : 'No invoices available.'}
+                  </p>
+                </td>
+              </tr>
+            ) : (
+              filteredInvoices.map((invoice) => {
               const riskData = riskMap.get(invoice.invoice_id);
               const risk = riskData?.risk;
               const parsed = riskData?.parsed;
@@ -335,11 +382,11 @@ export default function InvoicesTable({ filterRiskLevel }: InvoicesTableProps) {
                   )}
                 </React.Fragment>
               );
-            })}
+            })
+            )}
           </tbody>
         </table>
       </div>
-      )}
 
       {/* Reasons Modal */}
       {reasonsModal && (
