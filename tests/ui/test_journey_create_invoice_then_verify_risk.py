@@ -1,5 +1,7 @@
+import os
 import time
 import unittest
+import pytest
 from tests.ui.base_test import BaseUITest
 from tests.ui.pages.invoices_page import InvoicesPage
 from tests.ui.utils.erpnext_api import create_purchase_invoice_critical
@@ -7,6 +9,10 @@ from tests.ui.utils.backend_api import run_backend_sync
 from tests.ui.utils.erpnext_api import delete_purchase_invoice
 
 class TestERPNextToUIFlow(BaseUITest):
+    @pytest.mark.skipif(
+        not os.getenv("ERPNEXT_COMPANY") or not os.getenv("ERPNEXT_API_KEY"),
+        reason="Skipping: ERPNext credentials not configured (ERPNEXT_COMPANY, ERPNEXT_API_KEY required)"
+    )
     def test_invoice_appears_with_correct_risk(self):
         invoice_id = create_purchase_invoice_critical()
 
