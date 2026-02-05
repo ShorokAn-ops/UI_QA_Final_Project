@@ -23,7 +23,7 @@ export default function Navigation() {
             </div>
             <div>
               <h1 className="text-3xl font-bold text-gray-900">
-                ERPNext Risk Analyzer
+                ERPNext Anomalous Analyzer
               </h1>
               <p className="text-sm text-gray-500 mt-1">
                 Real-time invoice risk monitoring and analysis

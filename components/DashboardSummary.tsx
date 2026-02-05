@@ -6,11 +6,13 @@
  */
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api-client';
 import { TrendingUp, Users, FileText, AlertTriangle } from 'lucide-react';
 
 export default function DashboardSummary() {
+  const router = useRouter();
   const { data, isLoading } = useQuery({
     queryKey: ['dashboard-summary'],
     queryFn: api.getDashboardSummary,
@@ -38,6 +40,7 @@ export default function DashboardSummary() {
       icon: FileText,
       color: 'text-blue-600',
       bgColor: 'bg-blue-50',
+      clickable: false,
     },
     {
       title: 'Total Suppliers',
@@ -45,6 +48,7 @@ export default function DashboardSummary() {
       icon: Users,
       color: 'text-purple-600',
       bgColor: 'bg-purple-50',
+      clickable: false,
     },
     {
       title: 'Critical Invoices',
@@ -52,6 +56,8 @@ export default function DashboardSummary() {
       icon: AlertTriangle,
       color: 'text-red-600',
       bgColor: 'bg-red-50',
+      clickable: true,
+      riskLevel: 'CRITICAL' as const,
     },
     {
       title: 'High Risk',
@@ -59,6 +65,8 @@ export default function DashboardSummary() {
       icon: TrendingUp,
       color: 'text-orange-600',
       bgColor: 'bg-orange-50',
+      clickable: true,
+      riskLevel: 'HIGH' as const,
     },
   ];
 
@@ -69,7 +77,10 @@ export default function DashboardSummary() {
         return (
           <div
             key={card.title}
-            className="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-6"
+            onClick={() => card.clickable && card.riskLevel && router.push(`/invoices?risk_level=${card.riskLevel}`)}
+            className={`bg-white rounded-lg shadow hover:shadow-md transition-all p-6 ${
+              card.clickable ? 'cursor-pointer hover:scale-105' : ''
+            }`}
           >
             <div className="flex items-center justify-between mb-4">
               <div className={`${card.bgColor} ${card.color} p-3 rounded-lg`}>

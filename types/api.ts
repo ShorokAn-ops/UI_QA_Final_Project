@@ -23,6 +23,29 @@ export interface InvoicesResponse {
 
 export type RiskLevel = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 
+// AI metadata from risk analysis
+export interface AiMeta {
+  provider?: string;
+  model?: string;
+  risk_adjustment?: number;
+  supplier_signal?: string;
+  base_rate?: number;
+  final_rate?: number;
+}
+
+// Normalized reason format (client-side)
+export interface NormalizedReason {
+  source: "RULE" | "AI";
+  text: string;
+  meta?: any;
+}
+
+// Raw reason from API (can be string or object)
+export type RawReason = string | {
+  reason: string;
+  details?: any;
+};
+
 export interface RiskReason {
   reason: string;
   details: string;
@@ -33,7 +56,7 @@ export interface RiskAnomaly {
   supplier?: string;
   rate: number;        // 0..1 (confidence score)
   risk_level: RiskLevel; // Always trust this value from backend
-  reasons: RiskReason[];
+  reasons: RawReason[]; // Can be string or object
 }
 
 export interface RiskAnomaliesResponse {

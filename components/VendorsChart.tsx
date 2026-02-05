@@ -6,6 +6,7 @@
  */
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api-client';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -15,10 +16,17 @@ import { RISK_CONFIG } from '@/lib/risk-config';
 const VENDOR_COLORS = ['#ef4444', '#f97316', '#f59e0b', '#3b82f6', '#8b5cf6', '#10b981', '#06b6d4', '#f43f5e'];
 
 export default function VendorsChart() {
+  const router = useRouter();
+  
   const { data, isLoading } = useQuery({
     queryKey: ['vendors-analytics'],
     queryFn: () => api.getVendorsAnalytics(0.6),
   });
+
+  const handleVendorClick = (vendorName: string) => {
+    const encodedVendor = encodeURIComponent(vendorName);
+    router.push(`/vendors?vendor=${encodedVendor}`);
+  };
 
   if (isLoading) {
     return (
@@ -58,6 +66,12 @@ export default function VendorsChart() {
               outerRadius={120}
               fill="#8884d8"
               dataKey="value"
+              onClick={(data) => {
+                if (data && data.name) {
+                  handleVendorClick(data.name);
+                }
+              }}
+              style={{ cursor: 'pointer' }}
             >
               {pieData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={VENDOR_COLORS[index % VENDOR_COLORS.length]} />
@@ -82,41 +96,15 @@ export default function VendorsChart() {
             <Legend 
               verticalAlign="bottom" 
               height={36}
-              formatter={(value, entry) => {
-                const data = entry.payload;
-                return `${value} (${data.value} risky invoices)`;
+              formatter={(value, _name, props: any) => {
+                const payload = props?.payload;
+                const riskyCount = payload?.value ?? 0;
+                return `${value} (${riskyCount} risky invoices)`;
               }}
+
             />
           </PieChart>
         </ResponsiveContainer>
-      </div>
-
-      <div className="mt-6">
-        <h3 className="text-lg font-medium mb-4 text-gray-900">Vendor Risk Summary</h3>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vendor</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Invoices</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">High Risk</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Critical</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Avg Amount</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {vendors.map((vendor, index) => (
-                <tr key={index} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{vendor.supplier}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{vendor.invoices}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-orange-600 font-medium">{vendor.high_or_more - vendor.critical}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600 font-medium">{vendor.critical}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${vendor.avg_total.toFixed(2)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
       </div>
     </div>
   );

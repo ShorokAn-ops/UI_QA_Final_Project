@@ -1,0 +1,111 @@
+name: UI Tests with Allure
+
+on:
+  workflow_dispatch: # Manual trigger
+  pull_request:
+    branches: [main, master, develop]
+
+jobs:
+  ui-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      # 3. Setup Python
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        run: pip install -r tests/ui/requirements.txt
+
+      # 4. Install Playwright browsers
+      - name: Install Playwright browsers
+        run: python -m playwright install --with-deps chromium
+
+      # 5. Start Next.js in background
+      - name: Build Next.js
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL || 'http://localhost:8081' }}
+
+      - name: Start Next.js server
+        run: npm run dev &
+        env:
+          NODE_ENV: test
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL || 'http://localhost:8081' }}
+          ERPNEXT_BASE_URL: ${{ secrets.ERPNEXT_BASE_URL || 'http://localhost:8080' }}
+          ERPNEXT_API_KEY: ${{ secrets.ERPNEXT_API_KEY || 'demo_api_key' }}
+          ERPNEXT_API_SECRET: ${{ secrets.ERPNEXT_API_SECRET || 'demo_api_secret' }}
+          ERPNEXT_COMPANY: ${{ secrets.ERPNEXT_COMPANY || 'Demo Company' }}
+          ERPNEXT_ITEM_ID: ${{ secrets.ERPNEXT_ITEM_ID || 'Office Supplies' }}
+          ERPNEXT_SUPPLIER: ${{ secrets.ERPNEXT_SUPPLIER || 'NovaTech Trading' }}
+          ERPNEXT_CURRENCY: ${{ secrets.ERPNEXT_CURRENCY || 'USD' }}
+          ERPNEXT_CONVERSION_RATE: ${{ secrets.ERPNEXT_CONVERSION_RATE || '1' }}
+
+      # 6. Wait for server to be ready
+      - name: Wait for Next.js server
+        run: |
+          echo "Waiting for server at http://localhost:3001..."
+          timeout 60 bash -c 'until curl -f http://localhost:3001 > /dev/null 2>&1; do echo "Waiting..."; sleep 2; done'
+          echo "Server is ready!"
+
+      # 7. Run Playwright tests with Allure
+      - name: Run UI tests
+        run: pytest tests/ui -v --tb=short --alluredir=allure-results
+        env:
+          CI: true
+          HEADLESS: '1'
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL || 'http://localhost:8081' }}
+          ERPNEXT_BASE_URL: ${{ secrets.ERPNEXT_BASE_URL || 'http://localhost:8080' }}
+          ERPNEXT_API_KEY: ${{ secrets.ERPNEXT_API_KEY || 'demo_api_key' }}
+          ERPNEXT_API_SECRET: ${{ secrets.ERPNEXT_API_SECRET || 'demo_api_secret' }}
+          ERPNEXT_COMPANY: ${{ secrets.ERPNEXT_COMPANY || 'Demo Company' }}
+          ERPNEXT_ITEM_ID: ${{ secrets.ERPNEXT_ITEM_ID || 'Office Supplies' }}
+          ERPNEXT_SUPPLIER: ${{ secrets.ERPNEXT_SUPPLIER || 'NovaTech Trading' }}
+          ERPNEXT_CURRENCY: ${{ secrets.ERPNEXT_CURRENCY || 'USD' }}
+          ERPNEXT_CONVERSION_RATE: ${{ secrets.ERPNEXT_CONVERSION_RATE || '1' }}
+          RISK_UI_URL: http://localhost:3001
+
+      # 8. Generate Allure HTML report
+      - name: Install Allure CLI
+        if: always()
+        run: |
+          wget https://github.com/allure-framework/allure2/releases/download/2.25.0/allure-2.25.0.tgz
+          tar -zxf allure-2.25.0.tgz -C /opt
+          sudo ln -s /opt/allure-2.25.0/bin/allure /usr/bin/allure
+
+      - name: Generate Allure report
+        if: always()
+        run: allure generate allure-results -o allure-report --clean
+
+      # 9. Upload artifacts
+      - name: Upload Allure results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results
+          path: allure-results
+          retention-days: 7
+
+      - name: Upload Allure report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-report
+          path: allure-report
+          retention-days: 7
