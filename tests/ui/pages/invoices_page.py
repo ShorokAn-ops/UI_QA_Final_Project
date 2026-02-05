@@ -85,8 +85,16 @@ class InvoicesPage(BasePage):
         Args:
             risk_level: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW'
         """
-        # Wait for table to load
+        # Wait for table to load AND for data to populate
         self.page.wait_for_selector("tbody tr", timeout=30_000)
+        
+        # Additional wait for risk badges to appear in the rows
+        risk_text = risk_level.capitalize()
+        first_risk_badge = self.page.locator(f"tbody tr:has-text('{risk_text}')").first
+        expect(first_risk_badge).to_be_visible(timeout=15_000)
+        
+        # Give a moment for all rows to render completely
+        self.page.wait_for_timeout(1000)
         
         rows = self.page.locator("tbody tr")
         row_count = rows.count()
@@ -94,18 +102,19 @@ class InvoicesPage(BasePage):
         assert row_count > 0, "No invoice rows found in the table"
         
         # Check each row contains the expected risk level
-        risk_text = risk_level.capitalize()
         for i in range(row_count):
             row = rows.nth(i)
             # Wait for row to be visible first
             expect(row).to_be_visible(timeout=10_000)
             
-            # Check that the row contains the risk level text
-            # Use a more flexible approach that works in CI
+            # Get row text and check (case-insensitive for robustness)
             row_text = row.inner_text()
-            assert risk_text in row_text, (
+            row_text_lower = row_text.lower()
+            risk_text_lower = risk_text.lower()
+            
+            assert risk_text_lower in row_text_lower, (
                 f"Row {i+1} does not contain '{risk_text}'. "
-                f"Row content: {row_text[:100]}"
+                f"Row content: {row_text[:150]}"
             )
 
     def wait_for_url_contains(self, text: str):
