@@ -52,31 +52,15 @@ class RiskUIInvoicesPage:
         }
         risk_value = label_to_value.get(label, label.upper())
         
-        # For React apps, select_option sometimes doesn't trigger onChange
-        # Use evaluate to set value and dispatch change event manually
-        self.page.evaluate(f"""
-            (riskValue) => {{
-                const select = document.querySelector('#risk-filter');
-                if (select) {{
-                    select.value = riskValue;
-                    select.dispatchEvent(new Event('change', {{ bubbles: true }}));
-                    select.dispatchEvent(new Event('input', {{ bubbles: true }}));
-                }}
-            }}
-        """, risk_value)
+        # Use Playwright's select_option which properly triggers React events
+        select.select_option(value=risk_value)
         
-        # Short wait for React onChange to process
-        self.page.wait_for_timeout(1000)
+        # Wait for React transition to complete and URL to update
+        # startTransition can delay the navigation
+        self.page.wait_for_timeout(2000)
         
         # Wait for URL to update with risk_level parameter
-        # The filter works by changing URL query param which triggers React re-render
-        try:
-            expect(self.page).to_have_url(re.compile(f"risk_level={risk_value}", re.IGNORECASE), timeout=10000)
-        except Exception:
-            # Fallback: try using Playwright's select_option if evaluate didn't work
-            select.select_option(value=risk_value)
-            self.page.wait_for_timeout(1000)
-            expect(self.page).to_have_url(re.compile(f"risk_level={risk_value}", re.IGNORECASE), timeout=10000)
+        expect(self.page).to_have_url(re.compile(f"risk_level={risk_value}", re.IGNORECASE), timeout=15000)
         
         # Wait for "Filtered: {label}" badge to appear (confirms filter applied)
         filtered_badge = self.page.locator(f'text=Filtered: {label}')

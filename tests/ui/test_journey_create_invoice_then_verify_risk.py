@@ -9,7 +9,7 @@ from tests.ui.utils.erpnext_api import delete_purchase_invoice
 
 class TestERPNextToUIFlow(BaseUITest):
    
-   # @unittest.skipIf(os.getenv("CI"), "Skipping in CI environment - requires ERPNext backend")
+    @unittest.skipIf(os.getenv("CI"), "Skipping in CI environment - requires ERPNext backend")
     def test_invoice_appears_with_correct_risk(self):
         invoice_id = create_purchase_invoice_critical()
 

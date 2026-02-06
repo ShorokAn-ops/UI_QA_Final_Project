@@ -90,7 +90,7 @@ class TestDashboardToInvoicesCriticalFlow(BaseUITest):
         
         # Step 4: Verify URL updates correctly
         print("\nStep 4: Verifying URL navigation...")
-        self.page.wait_for_url("**/invoices?risk_level=CRITICAL", timeout=10_000)
+        self.page.wait_for_url("**/invoices?risk_level=CRITICAL", timeout=5000)
         current_url = self.page.url
         self.assertIn("/invoices", current_url)
         self.assertIn("risk_level=CRITICAL", current_url)
@@ -107,7 +107,7 @@ class TestDashboardToInvoicesCriticalFlow(BaseUITest):
         invoices = InvoicesPage(self.page)
         
         # Wait for invoices page to load
-        self.page.wait_for_selector("h2:has-text('Invoices')", timeout=10_000)
+        self.page.wait_for_selector("h2:has-text('Invoices')", timeout=5000)
         print("✓ Invoices page loaded")
         
         # Step 5: Verify the filter dropdown shows "Critical" selected
