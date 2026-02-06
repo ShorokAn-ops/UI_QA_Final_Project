@@ -7,7 +7,6 @@ on:
     branches: [main, master, develop]
   workflow_dispatch: # Manual trigger button in GitHub Actions
 
-
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -38,19 +37,41 @@ jobs:
       - name: Build Next.js
         run: npm run build
 
+      # Validate required secrets before starting server
+      - name: Validate ERPNext Configuration
+        run: |
+          echo "Validating ERPNext configuration..."
+          MISSING=""
+          [ -z "${{ secrets.ERPNEXT_BASE_URL }}" ] && [ -z "${{ secrets.ERPNEXT_URL }}" ] && MISSING="${MISSING}ERPNEXT_BASE_URL or ERPNEXT_URL, "
+          [ -z "${{ secrets.ERPNEXT_API_KEY }}" ] && MISSING="${MISSING}ERPNEXT_API_KEY, "
+          [ -z "${{ secrets.ERPNEXT_API_SECRET }}" ] && MISSING="${MISSING}ERPNEXT_API_SECRET, "
+          [ -z "${{ secrets.ERPNEXT_COMPANY }}" ] && MISSING="${MISSING}ERPNEXT_COMPANY, "
+          [ -z "${{ secrets.ERPNEXT_ITEM_ID }}" ] && MISSING="${MISSING}ERPNEXT_ITEM_ID, "
+
+          if [ -n "$MISSING" ]; then
+            echo "❌ Missing required GitHub Secrets: ${MISSING%??}"
+            echo "Please configure these secrets in your repository settings."
+            echo "See GITHUB_SECRETS_SETUP.md for detailed instructions."
+            exit 1
+          fi
+          echo "✅ All required secrets are configured"
+
       # Start Next.js in background (production mode is more stable in CI)
       - name: Start Next.js server
         run: |
+          echo "Starting Next.js server with ERPNext config..."
+          echo "ERPNEXT_BASE_URL: ${ERPNEXT_BASE_URL}"
+          echo "Credentials configured: $([ -n "$ERPNEXT_API_KEY" ] && echo 'yes' || echo 'no')"
           nohup npm run start > server.log 2>&1 &
           echo $! > .next-pid
           sleep 5
         env:
           PORT: 3001
-          ERPNEXT_BASE_URL: ${{ secrets.ERPNEXT_BASE_URL || secrets.ERPNEXT_URL || 'https://demo.erpnext.com' }}
-          ERPNEXT_API_KEY: ${{ secrets.ERPNEXT_API_KEY || 'demo_key' }}
-          ERPNEXT_API_SECRET: ${{ secrets.ERPNEXT_API_SECRET || 'demo_secret' }}
-          ERPNEXT_COMPANY: ${{ secrets.ERPNEXT_COMPANY || 'Demo Company' }}
-          ERPNEXT_ITEM_ID: ${{ secrets.ERPNEXT_ITEM_ID || 'ITEM-001' }}
+          ERPNEXT_BASE_URL: ${{ secrets.ERPNEXT_BASE_URL || secrets.ERPNEXT_URL }}
+          ERPNEXT_API_KEY: ${{ secrets.ERPNEXT_API_KEY }}
+          ERPNEXT_API_SECRET: ${{ secrets.ERPNEXT_API_SECRET }}
+          ERPNEXT_COMPANY: ${{ secrets.ERPNEXT_COMPANY }}
+          ERPNEXT_ITEM_ID: ${{ secrets.ERPNEXT_ITEM_ID }}
           ERPNEXT_SUPPLIER: ${{ secrets.ERPNEXT_SUPPLIER || 'NovaTech Trading' }}
           ERPNEXT_CURRENCY: ${{ secrets.ERPNEXT_CURRENCY || 'USD' }}
           ERPNEXT_CONVERSION_RATE: ${{ secrets.ERPNEXT_CONVERSION_RATE || '1' }}
@@ -77,13 +98,13 @@ jobs:
           CI: true
           HEADLESS: '1'
           GITHUB_ACTIONS: true
-          APP_URL: http://localhost:3001
-          # ERPNext connection (use GitHub Secrets) - Note: These are already in the Next.js server environment
-          ERPNEXT_BASE_URL: ${{ secrets.ERPNEXT_BASE_URL || secrets.ERPNEXT_URL || 'https://demo.erpnext.com' }}
-          ERPNEXT_API_KEY: ${{ secrets.ERPNEXT_API_KEY || 'demo_key' }}
-          ERPNEXT_API_SECRET: ${{ secrets.ERPNEXT_API_SECRET || 'demo_secret' }}
-          ERPNEXT_COMPANY: ${{ secrets.ERPNEXT_COMPANY || 'Demo Company' }}
-          ERPNEXT_ITEM_ID: ${{ secrets.ERPNEXT_ITEM_ID || 'ITEM-001' }}
+          UI_BASE_URL: http://localhost:3001
+          # ERPNext connection (these are passed to Next.js server, not used directly by tests)
+          ERPNEXT_BASE_URL: ${{ secrets.ERPNEXT_BASE_URL || secrets.ERPNEXT_URL }}
+          ERPNEXT_API_KEY: ${{ secrets.ERPNEXT_API_KEY }}
+          ERPNEXT_API_SECRET: ${{ secrets.ERPNEXT_API_SECRET }}
+          ERPNEXT_COMPANY: ${{ secrets.ERPNEXT_COMPANY }}
+          ERPNEXT_ITEM_ID: ${{ secrets.ERPNEXT_ITEM_ID }}
         continue-on-error: true
 
       # Stop server and show logs
