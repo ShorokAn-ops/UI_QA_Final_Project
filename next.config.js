@@ -2,10 +2,11 @@
 const nextConfig = {
   reactStrictMode: true,
 
-  // Allow external dev origins (e.g. ngrok)
+  // Allow external dev origins (e.g. ngrok) - domains without protocol
   allowedDevOrigins: [
-    "https://*.ngrok-free.dev",
-    "https://*.ngrok.app",
+    "untrusted-cythia-unpunctilious.ngrok-free.dev",
+    ".ngrok-free.dev",
+    ".ngrok.app",
   ],
 
   // Proxy API requests from frontend -> backend
@@ -21,6 +22,29 @@ const nextConfig = {
       {
         source: "/api/:path*",
         destination: "http://127.0.0.1:8081/:path*",
+      },
+    ];
+  },
+
+  // Add headers to allow cross-origin requests
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          {
+            key: "Access-Control-Allow-Origin",
+            value: "*",
+          },
+          {
+            key: "Access-Control-Allow-Methods",
+            value: "GET, POST, PUT, DELETE, OPTIONS",
+          },
+          {
+            key: "Access-Control-Allow-Headers",
+            value: "X-Requested-With, Content-Type, Authorization",
+          },
+        ],
       },
     ];
   },

@@ -1,12 +1,9 @@
 name: UI Tests with Allure Report
 
 on:
-  push:
-    branches: [main, master, develop, AI_UI_Anomalous-Invoices-and-Suppliers]
   pull_request:
-    branches: [main, master, develop]
+    branches: [main]
   workflow_dispatch: # Manual trigger button in GitHub Actions
-
 
 jobs:
   test:
@@ -33,68 +30,16 @@ jobs:
           npm install
           python -m pip install --upgrade pip
           pip install -r tests/ui/requirements.txt
-          playwright install --with-deps chromium
-
-      - name: Build Next.js
-        run: npm run build
-
-      # Start Next.js in background (production mode is more stable in CI)
-      - name: Start Next.js server
-        run: |
-          nohup npm run start > server.log 2>&1 &
-          echo $! > .next-pid
-          sleep 5
-        env:
-          PORT: 3001
-          ERPNEXT_BASE_URL: ${{ secrets.ERPNEXT_BASE_URL || secrets.ERPNEXT_URL || 'https://demo.erpnext.com' }}
-          ERPNEXT_API_KEY: ${{ secrets.ERPNEXT_API_KEY || 'demo_key' }}
-          ERPNEXT_API_SECRET: ${{ secrets.ERPNEXT_API_SECRET || 'demo_secret' }}
-          ERPNEXT_COMPANY: ${{ secrets.ERPNEXT_COMPANY || 'Demo Company' }}
-          ERPNEXT_ITEM_ID: ${{ secrets.ERPNEXT_ITEM_ID || 'ITEM-001' }}
-          ERPNEXT_SUPPLIER: ${{ secrets.ERPNEXT_SUPPLIER || 'NovaTech Trading' }}
-          ERPNEXT_CURRENCY: ${{ secrets.ERPNEXT_CURRENCY || 'USD' }}
-          ERPNEXT_CONVERSION_RATE: ${{ secrets.ERPNEXT_CONVERSION_RATE || '1' }}
-
-      # Wait for server to be ready
-      - name: Wait for server
-        run: |
-          echo "Waiting for server..."
-          for i in {1..30}; do
-            if curl -f http://localhost:3001 > /dev/null 2>&1; then
-              echo "✅ Server is ready!"
-              exit 0
-            fi
-            echo "Attempt $i/30 - waiting..."
-            sleep 2
-          done
-          echo "❌ Server failed to start. Logs:"
-          cat server.log
-          exit 1
-
+          playwright install --with-deps chromium  
+    
       - name: Run Playwright tests with Allure
         run: pytest tests/ui -v --alluredir=allure-results
         env:
           CI: true
           HEADLESS: '1'
           GITHUB_ACTIONS: true
-          APP_URL: http://localhost:3001
-          # ERPNext connection (use GitHub Secrets) - Note: These are already in the Next.js server environment
-          ERPNEXT_BASE_URL: ${{ secrets.ERPNEXT_BASE_URL || secrets.ERPNEXT_URL || 'https://demo.erpnext.com' }}
-          ERPNEXT_API_KEY: ${{ secrets.ERPNEXT_API_KEY || 'demo_key' }}
-          ERPNEXT_API_SECRET: ${{ secrets.ERPNEXT_API_SECRET || 'demo_secret' }}
-          ERPNEXT_COMPANY: ${{ secrets.ERPNEXT_COMPANY || 'Demo Company' }}
-          ERPNEXT_ITEM_ID: ${{ secrets.ERPNEXT_ITEM_ID || 'ITEM-001' }}
+          UI_BASE_URL: https://untrusted-cythia-unpunctilious.ngrok-free.dev
         continue-on-error: true
-
-      # Stop server and show logs
-      - name: Stop Next.js server
-        if: always()
-        run: |
-          if [ -f .next-pid ]; then
-            kill $(cat .next-pid) || true
-          fi
-          echo "Server logs:"
-          cat server.log || true
 
       - name: Generate Allure report
         if: always()

@@ -52,44 +52,76 @@ export async function POST() {
     ],
   };
 
-  // Retry logic for nginx 504 timeouts
+  // Retry logic for nginx 504 timeouts and network issues
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
+      console.log(`[Attempt ${attempt}/3] Fetching ERPNext URL: ${url}`);
+      console.log(`[Attempt ${attempt}/3] ERPNext Base URL: ${ERPNEXT_BASE_URL}`);
+      
+      // Add timeout to prevent hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+      
       const response = await fetch(url, {
         method: 'POST',
         headers: authHeaders(),
         body: JSON.stringify(payload),
+        signal: controller.signal,
       });
+      
+      clearTimeout(timeoutId);
 
       if (response.ok) {
         const data = await response.json();
         const invoiceId = data?.data?.name;
         if (!invoiceId) {
           return NextResponse.json(
-            { error: 'ERPNext response missing invoice name' },
+            { error: 'ERPNext response missing invoice name', responseData: data },
             { status: 500 }
           );
         }
+        console.log(`✅ Successfully created invoice: ${invoiceId}`);
         return NextResponse.json({ invoice_id: invoiceId });
       }
 
       if (response.status === 504 && attempt < 3) {
+        console.log(`⚠️ Got 504 timeout, retrying...`);
         await new Promise(resolve => setTimeout(resolve, 8000));
         continue;
       }
 
       const text = await response.text();
+      console.error(`❌ ERPNext error: ${response.status} - ${text}`);
       return NextResponse.json(
         { error: `ERPNext error: ${response.status} - ${text}` },
         { status: response.status }
       );
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorName = error instanceof Error ? error.name : 'Unknown';
+      
+      console.error(`❌ Attempt ${attempt}/3 failed:`, {
+        name: errorName,
+        message: errorMessage,
+        url: ERPNEXT_BASE_URL,
+        hasApiKey: !!ERPNEXT_API_KEY,
+        hasApiSecret: !!ERPNEXT_API_SECRET,
+      });
+      
       if (attempt === 3) {
         return NextResponse.json(
-          { error: `Failed after retries: ${error}` },
+          { 
+            error: `Failed after ${attempt} retries: ${errorName}: ${errorMessage}`,
+            details: {
+              erpnext_url: ERPNEXT_BASE_URL,
+              credentials_configured: !!(ERPNEXT_API_KEY && ERPNEXT_API_SECRET),
+              error_type: errorName,
+            }
+          },
           { status: 500 }
         );
       }
+      console.log(`⏳ Retrying in 5 seconds...`);
       await new Promise(resolve => setTimeout(resolve, 5000));
     }
   }
