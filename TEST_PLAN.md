@@ -24,3 +24,4 @@ All critical UI workflows are covered by automated tests.
 Test results are generated with Allure reports showing pass/fail status with screenshots.
 Execute tests with: `pytest tests/ui/ -v`
 Generate reports with: `allure generate allure-results -o allure-report`
+
