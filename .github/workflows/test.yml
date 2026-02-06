@@ -42,11 +42,11 @@ jobs:
         run: |
           echo "Validating ERPNext configuration..."
           MISSING=""
-          [ -z "${{ secrets.ERPNEXT_BASE_URL }}" ] && [ -z "${{ secrets.ERPNEXT_URL }}" ] && MISSING="${MISSING}ERPNEXT_BASE_URL or ERPNEXT_URL, "
-          [ -z "${{ secrets.ERPNEXT_API_KEY }}" ] && MISSING="${MISSING}ERPNEXT_API_KEY, "
-          [ -z "${{ secrets.ERPNEXT_API_SECRET }}" ] && MISSING="${MISSING}ERPNEXT_API_SECRET, "
-          [ -z "${{ secrets.ERPNEXT_COMPANY }}" ] && MISSING="${MISSING}ERPNEXT_COMPANY, "
-          [ -z "${{ secrets.ERPNEXT_ITEM_ID }}" ] && MISSING="${MISSING}ERPNEXT_ITEM_ID, "
+          [ -z "$ERPNEXT_BASE_URL" ] && MISSING="${MISSING}ERPNEXT_BASE_URL or ERPNEXT_URL, "
+          [ -z "$ERPNEXT_API_KEY" ] && MISSING="${MISSING}ERPNEXT_API_KEY, "
+          [ -z "$ERPNEXT_API_SECRET" ] && MISSING="${MISSING}ERPNEXT_API_SECRET, "
+          [ -z "$ERPNEXT_COMPANY" ] && MISSING="${MISSING}ERPNEXT_COMPANY, "
+          [ -z "$ERPNEXT_ITEM_ID" ] && MISSING="${MISSING}ERPNEXT_ITEM_ID, "
 
           if [ -n "$MISSING" ]; then
             echo "❌ Missing required GitHub Secrets: ${MISSING%??}"
@@ -55,6 +55,13 @@ jobs:
             exit 1
           fi
           echo "✅ All required secrets are configured"
+          echo "✅ ERPNEXT_BASE_URL: $ERPNEXT_BASE_URL"
+        env:
+          ERPNEXT_BASE_URL: ${{ secrets.ERPNEXT_BASE_URL || secrets.ERPNEXT_URL }}
+          ERPNEXT_API_KEY: ${{ secrets.ERPNEXT_API_KEY }}
+          ERPNEXT_API_SECRET: ${{ secrets.ERPNEXT_API_SECRET }}
+          ERPNEXT_COMPANY: ${{ secrets.ERPNEXT_COMPANY }}
+          ERPNEXT_ITEM_ID: ${{ secrets.ERPNEXT_ITEM_ID }}
 
       # Start Next.js in background (production mode is more stable in CI)
       - name: Start Next.js server
