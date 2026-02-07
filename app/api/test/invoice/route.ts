@@ -135,26 +135,70 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'Missing invoice id' }, { status: 400 });
   }
 
-  const url = `${ERPNEXT_BASE_URL}/api/resource/Purchase%20Invoice/${invoiceId}`;
-
   try {
-    const response = await fetch(url, {
+    // First, get the invoice to check its status
+    const getUrl = `${ERPNEXT_BASE_URL}/api/resource/Purchase%20Invoice/${invoiceId}`;
+    const getResponse = await fetch(getUrl, {
+      method: 'GET',
+      headers: authHeaders(),
+    });
+
+    if (!getResponse.ok) {
+      const text = await getResponse.text();
+      console.error(`Failed to get invoice ${invoiceId}: ${text}`);
+      return NextResponse.json(
+        { error: `Failed to get invoice: ${getResponse.status} - ${text}` },
+        { status: getResponse.status }
+      );
+    }
+
+    const invoiceData = await getResponse.json();
+    const docstatus = invoiceData?.data?.docstatus;
+
+    // If submitted (docstatus = 1), cancel it first
+    if (docstatus === 1) {
+      console.log(`Cancelling submitted invoice ${invoiceId}...`);
+      const cancelUrl = `${ERPNEXT_BASE_URL}/api/resource/Purchase%20Invoice/${invoiceId}`;
+      const cancelResponse = await fetch(cancelUrl, {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: JSON.stringify({ docstatus: 2 }), // 2 = Cancelled
+      });
+
+      if (!cancelResponse.ok) {
+        const cancelText = await cancelResponse.text();
+        console.error(`Failed to cancel invoice: ${cancelText}`);
+        return NextResponse.json(
+          { error: `Failed to cancel invoice: ${cancelResponse.status} - ${cancelText}` },
+          { status: cancelResponse.status }
+        );
+      }
+      console.log(`✅ Invoice ${invoiceId} cancelled successfully`);
+    }
+
+    // Now delete the invoice
+    const deleteUrl = `${ERPNEXT_BASE_URL}/api/resource/Purchase%20Invoice/${invoiceId}`;
+    const deleteResponse = await fetch(deleteUrl, {
       method: 'DELETE',
       headers: authHeaders(),
     });
 
-    if (!response.ok) {
-      const text = await response.text();
+    if (!deleteResponse.ok) {
+      const deleteText = await deleteResponse.text();
+      console.error(`Failed to delete invoice: ${deleteText}`);
       return NextResponse.json(
-        { error: `ERPNext delete failed: ${response.status} - ${text}` },
-        { status: response.status }
+        { error: `ERPNext delete failed: ${deleteResponse.status} - ${deleteText}` },
+        { status: deleteResponse.status }
       );
     }
 
-    return NextResponse.json({ success: true });
+    console.log(`✅ Invoice ${invoiceId} deleted successfully`);
+    return NextResponse.json({ success: true, message: `Invoice ${invoiceId} deleted successfully` });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error(`Delete operation failed: ${errorMessage}`);
     return NextResponse.json(
-      { error: `Delete failed: ${error}` },
+      { error: `Delete failed: ${errorMessage}` },
       { status: 500 }
     );
   }

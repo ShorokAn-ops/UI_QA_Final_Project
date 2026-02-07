@@ -9,7 +9,6 @@ from tests.ui.utils.erpnext_api import delete_purchase_invoice
 
 class TestERPNextToUIFlow(BaseUITest):
    
-    #@unittest.skipIf(os.getenv("CI"), "Skipping in CI environment - requires ERPNext backend")
     def test_invoice_appears_with_correct_risk(self):
         invoice_id = create_purchase_invoice_critical()
 
@@ -49,10 +48,15 @@ class TestERPNextToUIFlow(BaseUITest):
 
         finally:
             # 🧹 TEARDOWN: delete invoice from ERPNext
+            print(f"\n🧹 Cleaning up: Deleting invoice {invoice_id}...")
             try:
                 delete_purchase_invoice(invoice_id)
+                print(f"✅ Successfully deleted invoice {invoice_id}\n")
             except Exception as e:
-                print(f"WARNING: failed to delete invoice {invoice_id}: {e}")
+                print(f"❌ ERROR: Failed to delete invoice {invoice_id}")
+                print(f"Error type: {type(e).__name__}")
+                print(f"Error message: {str(e)}")
+                print(f"⚠️  WARNING: Invoice {invoice_id} may need manual cleanup\n")
 
 
 if __name__ == "__main__":
