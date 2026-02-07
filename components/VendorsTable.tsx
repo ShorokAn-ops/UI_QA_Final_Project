@@ -102,7 +102,8 @@ export default function VendorsTable({ filterVendor }: VendorsTableProps) {
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {filteredVendors.map((vendor: VendorAnalytics, index: number) => {
-              const hasHighRisk = vendor.high_or_more > 0;
+              const highRiskOnly = vendor.high_or_more - vendor.critical;
+              const hasHighRisk = highRiskOnly > 0;
               const hasCriticalRisk = vendor.critical > 0;
               const hasAI = supplierHasAI.get(vendor.supplier) || false;
               const riskExplanations = getVendorRiskExplanation(vendor);
@@ -147,7 +148,7 @@ export default function VendorsTable({ filterVendor }: VendorsTableProps) {
                   <td className="px-6 py-4 whitespace-nowrap text-center">
                     {hasHighRisk ? (
                       <span className="inline-flex items-center justify-center px-3 py-1.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-800 border border-orange-300">
-                        {vendor.high_or_more}
+                        {highRiskOnly}
                       </span>
                     ) : (
                       <span className="inline-flex items-center justify-center px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">

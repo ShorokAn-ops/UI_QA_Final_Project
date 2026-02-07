@@ -49,6 +49,11 @@ export default function VendorsChart() {
       high: vendor.high_or_more - vendor.critical,
     }));
 
+  // Create a map for quick lookup in legend formatter
+  const vendorDataMap = new Map(
+    pieData.map(item => [item.name, item])
+  );
+
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <h2 className="text-xl font-semibold mb-4 text-gray-900">Vendor Risk Analytics</h2>
@@ -96,10 +101,10 @@ export default function VendorsChart() {
             <Legend 
               verticalAlign="bottom" 
               height={36}
-              formatter={(value, _name, props: any) => {
-                const payload = props?.payload;
-                const riskyCount = payload?.value ?? 0;
-                return `${value} (${riskyCount} risky invoices)`;
+              formatter={(value) => {
+                const vendorData = vendorDataMap.get(value);
+                const criticalCount = vendorData?.critical ?? 0;
+                return `${value} (${criticalCount} critical invoices)`;
               }}
 
             />
